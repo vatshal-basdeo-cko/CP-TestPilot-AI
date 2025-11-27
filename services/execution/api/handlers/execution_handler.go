@@ -143,4 +143,3 @@ func (h *ExecutionHandler) HealthCheck(c *gin.Context) {
 		"service": "execution",
 	})
 }
-
