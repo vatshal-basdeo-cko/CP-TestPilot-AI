@@ -1,0 +1,412 @@
+openapi: 3.0.3
+info:
+  title: TestPilot AI - Base API Contract
+  description: |
+    Base OpenAPI specification for TestPilot AI microservices.
+    This defines common schemas and patterns used across all services.
+  version: 1.0.0
+  contact:
+    name: TestPilot AI Team
+
+servers:
+  - url: http://localhost:8000
+    description: Local development (via Gateway)
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authentication
+
+  schemas:
+    # Common Response Schemas
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          example: "ValidationError"
+        message:
+          type: string
+          example: "Invalid request parameters"
+        details:
+          type: object
+          additionalProperties: true
+
+    Success:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Operation completed successfully"
+        data:
+          type: object
+          additionalProperties: true
+
+    # Pagination
+    PaginationRequest:
+      type: object
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          default: 1
+        page_size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+
+    PaginationResponse:
+      type: object
+      required:
+        - total
+        - page
+        - page_size
+        - total_pages
+      properties:
+        total:
+          type: integer
+          description: Total number of items
+        page:
+          type: integer
+          description: Current page number
+        page_size:
+          type: integer
+          description: Number of items per page
+        total_pages:
+          type: integer
+          description: Total number of pages
+
+    # User Schemas
+    User:
+      type: object
+      required:
+        - id
+        - username
+        - role
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        role:
+          type: string
+          enum: [admin, user]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # API Specification Schemas
+    APISpecification:
+      type: object
+      required:
+        - id
+        - name
+        - version
+        - source_type
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        version:
+          type: string
+        source_type:
+          type: string
+          enum: [file, postman, git, url]
+        source_path:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # Environment Schemas
+    Environment:
+      type: object
+      required:
+        - id
+        - name
+        - base_url
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        base_url:
+          type: string
+          format: uri
+        auth_config:
+          type: object
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # Test Execution Schemas
+    TestExecution:
+      type: object
+      required:
+        - id
+        - user_id
+        - natural_language_request
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        api_spec_id:
+          type: string
+          format: uuid
+        environment_id:
+          type: string
+          format: uuid
+        natural_language_request:
+          type: string
+        constructed_request:
+          type: object
+          additionalProperties: true
+        response:
+          type: object
+          additionalProperties: true
+        validation_result:
+          type: object
+          additionalProperties: true
+        status:
+          type: string
+          enum: [success, failed, error]
+        execution_time_ms:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    # API Request/Response
+    APIRequest:
+      type: object
+      required:
+        - method
+        - url
+      properties:
+        method:
+          type: string
+          enum: [GET, POST, PUT, PATCH, DELETE]
+        url:
+          type: string
+          format: uri
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        query_params:
+          type: object
+          additionalProperties:
+            type: string
+        body:
+          type: object
+          additionalProperties: true
+
+    APIResponse:
+      type: object
+      required:
+        - status_code
+      properties:
+        status_code:
+          type: integer
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        body:
+          type: object
+          additionalProperties: true
+        execution_time_ms:
+          type: integer
+
+    # Validation Schemas
+    ValidationRule:
+      type: object
+      required:
+        - id
+        - api_spec_id
+        - rule_type
+        - rule_definition
+      properties:
+        id:
+          type: string
+          format: uuid
+        api_spec_id:
+          type: string
+          format: uuid
+        rule_type:
+          type: string
+          enum: [schema, status, custom]
+        rule_definition:
+          type: object
+          additionalProperties: true
+        is_active:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ValidationResult:
+      type: object
+      required:
+        - passed
+        - results
+      properties:
+        passed:
+          type: boolean
+        results:
+          type: array
+          items:
+            type: object
+            required:
+              - rule_type
+              - passed
+            properties:
+              rule_type:
+                type: string
+              passed:
+                type: boolean
+              message:
+                type: string
+              details:
+                type: object
+                additionalProperties: true
+
+    # System Config
+    SystemConfig:
+      type: object
+      required:
+        - key
+        - value
+      properties:
+        key:
+          type: string
+        value:
+          type: object
+          additionalProperties: true
+        description:
+          type: string
+        updated_at:
+          type: string
+          format: date-time
+
+  # Common Response Patterns
+  responses:
+    Unauthorized:
+      description: Unauthorized - Invalid or missing authentication token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Unauthorized"
+            message: "Invalid or missing authentication token"
+
+    Forbidden:
+      description: Forbidden - Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Forbidden"
+            message: "You do not have permission to access this resource"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "NotFound"
+            message: "The requested resource was not found"
+
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "ValidationError"
+            message: "Invalid request parameters"
+            details:
+              field: "value is required"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "InternalServerError"
+            message: "An unexpected error occurred"
+
+  # Common Parameters
+  parameters:
+    PageNumber:
+      name: page
+      in: query
+      description: Page number for pagination
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+
+    PageSize:
+      name: page_size
+      in: query
+      description: Number of items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+    UUID:
+      name: id
+      in: path
+      required: true
+      description: Resource UUID
+      schema:
+        type: string
+        format: uuid
+

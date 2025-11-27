@@ -1,0 +1,250 @@
+version: '3.9'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: testpilot-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-testpilot}
+      POSTGRES_USER: ${POSTGRES_USER:-testpilot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_in_production}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - testpilot-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testpilot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Qdrant Vector Database
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: testpilot-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - testpilot-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Ingestion Service (Python)
+  ingestion:
+    build:
+      context: ./services/ingestion
+      dockerfile: Dockerfile
+    container_name: testpilot-ingestion
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-testpilot}
+      - POSTGRES_USER=${POSTGRES_USER:-testpilot}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme_in_production}
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - API_CONFIGS_PATH=/app/api_configs
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "${INGESTION_SERVICE_PORT:-8001}:8001"
+    volumes:
+      - ./api_configs:/app/api_configs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    networks:
+      - testpilot-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # LLM Service (Python)
+  llm:
+    build:
+      context: ./services/llm
+      dockerfile: Dockerfile
+    container_name: testpilot-llm
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-testpilot}
+      - POSTGRES_USER=${POSTGRES_USER:-testpilot}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme_in_production}
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - DEFAULT_LLM_PROVIDER=${DEFAULT_LLM_PROVIDER:-openai}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "${LLM_SERVICE_PORT:-8002}:8002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    networks:
+      - testpilot-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Execution Service (Go)
+  execution:
+    build:
+      context: ./services/execution
+      dockerfile: Dockerfile
+    container_name: testpilot-execution
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-testpilot}
+      - POSTGRES_USER=${POSTGRES_USER:-testpilot}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme_in_production}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "${EXECUTION_SERVICE_PORT:-8003}:8003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - testpilot-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Validation Service (C#)
+  validation:
+    build:
+      context: ./services/validation
+      dockerfile: Dockerfile
+    container_name: testpilot-validation
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-testpilot}
+      - POSTGRES_USER=${POSTGRES_USER:-testpilot}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme_in_production}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "${VALIDATION_SERVICE_PORT:-8004}:8004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - testpilot-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Query Service (Go)
+  query:
+    build:
+      context: ./services/query
+      dockerfile: Dockerfile
+    container_name: testpilot-query
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-testpilot}
+      - POSTGRES_USER=${POSTGRES_USER:-testpilot}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme_in_production}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "${QUERY_SERVICE_PORT:-8005}:8005"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - testpilot-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Gateway (Go)
+  gateway:
+    build:
+      context: ./services/gateway
+      dockerfile: Dockerfile
+    container_name: testpilot-gateway
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-testpilot}
+      - POSTGRES_USER=${POSTGRES_USER:-testpilot}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme_in_production}
+      - JWT_SECRET=${JWT_SECRET:-change_this_to_a_random_secret}
+      - JWT_EXPIRATION_HOURS=${JWT_EXPIRATION_HOURS:-24}
+      - INGESTION_SERVICE_URL=http://ingestion:8001
+      - LLM_SERVICE_URL=http://llm:8002
+      - EXECUTION_SERVICE_URL=http://execution:8003
+      - VALIDATION_SERVICE_URL=http://validation:8004
+      - QUERY_SERVICE_URL=http://query:8005
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - RATE_LIMIT_PER_MINUTE=${RATE_LIMIT_PER_MINUTE:-60}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    ports:
+      - "${GATEWAY_SERVICE_PORT:-8000}:8000"
+    depends_on:
+      - ingestion
+      - llm
+      - execution
+      - validation
+      - query
+    networks:
+      - testpilot-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend (React)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: testpilot-frontend
+    environment:
+      - VITE_API_GATEWAY_URL=http://localhost:8000
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      - gateway
+    networks:
+      - testpilot-network
+
+volumes:
+  postgres_data:
+    driver: local
+  qdrant_data:
+    driver: local
+
+networks:
+  testpilot-network:
+    driver: bridge
+
