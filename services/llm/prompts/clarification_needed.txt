@@ -1,0 +1,14 @@
+The user's request is ambiguous or missing required information.
+
+Request: "{natural_language_request}"
+Missing/Ambiguous: {issue}
+
+Generate a clear clarification question. Provide multiple choice options if applicable.
+
+Format:
+{
+  "question": "Clear question here?",
+  "type": "choice" or "text",
+  "options": ["option1", "option2"] // if type is choice
+}
+
