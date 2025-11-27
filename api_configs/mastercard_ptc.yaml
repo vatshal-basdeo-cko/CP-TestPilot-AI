@@ -1,0 +1,197 @@
+name: "Mastercard PTC Authorisation"
+version: "1.0.0"
+description: "Process Mastercard payment authorization transactions through the Payment Test Center (PTC) API"
+base_url: "${ENV_BASE_URL}"  # Replaced at runtime from environment config
+
+endpoints:
+  - name: "authorize"
+    path: "/api/v1/authorize"
+    method: "POST"
+    description: "Authorize a payment transaction for a specified amount"
+    authentication:
+      type: "api_key"
+      header: "X-API-Key"
+      description: "API key authentication required in header"
+    
+    parameters:
+      - name: "amount"
+        type: "number"
+        required: true
+        description: "Transaction amount in decimal format"
+        example: 200.00
+      
+      - name: "currency"
+        type: "string"
+        required: false
+        default: "USD"
+        description: "Three-letter ISO currency code"
+        example: "USD"
+        enum: ["USD", "EUR", "GBP"]
+      
+      - name: "card_number"
+        type: "string"
+        required: true
+        format: "card"
+        description: "16-digit card number"
+        example: "5555555555554444"
+      
+      - name: "card_expiry"
+        type: "string"
+        required: true
+        format: "MM/YY"
+        description: "Card expiry date"
+        example: "12/25"
+      
+      - name: "cvv"
+        type: "string"
+        required: true
+        description: "3 or 4 digit CVV code"
+        example: "123"
+      
+      - name: "merchant_id"
+        type: "string"
+        required: false
+        description: "Merchant identifier for the transaction"
+        example: "MERCH_001"
+    
+    request_schema:
+      type: "object"
+      required: ["amount", "card_number", "card_expiry", "cvv"]
+      properties:
+        amount:
+          type: "number"
+          minimum: 0.01
+          maximum: 999999.99
+          description: "Transaction amount"
+        currency:
+          type: "string"
+          pattern: "^[A-Z]{3}$"
+          default: "USD"
+        card_number:
+          type: "string"
+          pattern: "^[0-9]{16}$"
+          description: "16-digit card number"
+        card_expiry:
+          type: "string"
+          pattern: "^(0[1-9]|1[0-2])/[0-9]{2}$"
+          description: "MM/YY format"
+        cvv:
+          type: "string"
+          pattern: "^[0-9]{3,4}$"
+        merchant_id:
+          type: "string"
+          maxLength: 50
+        reference:
+          type: "string"
+          maxLength: 100
+          description: "Optional transaction reference"
+    
+    response_schema:
+      type: "object"
+      properties:
+        transaction_id:
+          type: "string"
+          description: "Unique transaction identifier"
+        status:
+          type: "string"
+          enum: ["approved", "declined", "pending", "error"]
+        authorization_code:
+          type: "string"
+          description: "Authorization code if approved"
+        amount:
+          type: "number"
+          description: "Authorized amount"
+        currency:
+          type: "string"
+        timestamp:
+          type: "string"
+          format: "date-time"
+        decline_reason:
+          type: "string"
+          description: "Reason if declined"
+    
+    expected_status_codes:
+      - code: 200
+        description: "Authorization successful"
+      - code: 400
+        description: "Invalid request parameters"
+      - code: 401
+        description: "Authentication failed"
+      - code: 402
+        description: "Payment declined"
+      - code: 500
+        description: "Server error"
+    
+    examples:
+      - name: "Successful authorization for $200"
+        request:
+          amount: 200.00
+          currency: "USD"
+          card_number: "5555555555554444"
+          card_expiry: "12/25"
+          cvv: "123"
+          reference: "TEST-AUTH-001"
+        response:
+          transaction_id: "txn_1234567890"
+          status: "approved"
+          authorization_code: "AUTH789"
+          amount: 200.00
+          currency: "USD"
+          timestamp: "2024-01-15T10:30:00Z"
+      
+      - name: "Authorization with merchant ID"
+        request:
+          amount: 500.00
+          currency: "EUR"
+          card_number: "4111111111111111"
+          card_expiry: "06/26"
+          cvv: "456"
+          merchant_id: "MERCH_001"
+        response:
+          transaction_id: "txn_0987654321"
+          status: "approved"
+          authorization_code: "AUTH456"
+          amount: 500.00
+          currency: "EUR"
+          timestamp: "2024-01-15T10:31:00Z"
+      
+      - name: "Declined transaction - insufficient funds"
+        request:
+          amount: 10000.00
+          currency: "USD"
+          card_number: "5555555555554444"
+          card_expiry: "12/25"
+          cvv: "123"
+        response:
+          transaction_id: "txn_1111222233"
+          status: "declined"
+          amount: 10000.00
+          currency: "USD"
+          decline_reason: "Insufficient funds"
+          timestamp: "2024-01-15T10:32:00Z"
+
+test_scenarios:
+  - scenario: "Small transaction"
+    natural_language: "Test authorization with amount 50"
+    expected_amount: 50.00
+  
+  - scenario: "Large transaction"
+    natural_language: "Authorize payment of 5000 dollars"
+    expected_amount: 5000.00
+  
+  - scenario: "Euro transaction"
+    natural_language: "Test Mastercard authorization for 200 EUR"
+    expected_amount: 200.00
+    expected_currency: "EUR"
+
+metadata:
+  api_provider: "Mastercard"
+  environment: "test"
+  rate_limit: "100 requests per minute"
+  documentation_url: "https://developer.mastercard.com/ptc/documentation"
+  support_contact: "api-support@mastercard.com"
+  version_history:
+    - version: "1.0.0"
+      date: "2024-01-15"
+      changes: "Initial API specification"
+

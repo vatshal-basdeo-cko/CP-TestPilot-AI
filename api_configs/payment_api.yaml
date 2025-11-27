@@ -1,0 +1,228 @@
+name: "Payment API"
+version: "2.1.0"
+description: "Generic payment processing API for credit card transactions"
+base_url: "${ENV_BASE_URL}"
+
+endpoints:
+  - name: "create_payment"
+    path: "/api/v2/payments"
+    method: "POST"
+    description: "Create a new payment transaction"
+    authentication:
+      type: "bearer"
+      description: "Bearer token authentication"
+    
+    parameters:
+      - name: "amount"
+        type: "number"
+        required: true
+        description: "Payment amount"
+      
+      - name: "description"
+        type: "string"
+        required: false
+        description: "Payment description"
+      
+      - name: "customer_email"
+        type: "string"
+        required: false
+        format: "email"
+        description: "Customer email address"
+    
+    request_schema:
+      type: "object"
+      required: ["amount", "payment_method"]
+      properties:
+        amount:
+          type: "number"
+          minimum: 0.01
+        currency:
+          type: "string"
+          default: "USD"
+        payment_method:
+          type: "object"
+          properties:
+            type:
+              type: "string"
+              enum: ["card", "bank_account"]
+            card:
+              type: "object"
+              properties:
+                number:
+                  type: "string"
+                exp_month:
+                  type: "integer"
+                exp_year:
+                  type: "integer"
+                cvc:
+                  type: "string"
+        description:
+          type: "string"
+          maxLength: 500
+        customer_email:
+          type: "string"
+          format: "email"
+        metadata:
+          type: "object"
+    
+    response_schema:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+        status:
+          type: "string"
+          enum: ["pending", "succeeded", "failed"]
+        amount:
+          type: "number"
+        currency:
+          type: "string"
+        created:
+          type: "integer"
+          description: "Unix timestamp"
+        payment_method_id:
+          type: "string"
+    
+    examples:
+      - name: "Simple card payment"
+        request:
+          amount: 100.00
+          currency: "USD"
+          payment_method:
+            type: "card"
+            card:
+              number: "4242424242424242"
+              exp_month: 12
+              exp_year: 2025
+              cvc: "123"
+          description: "Test payment"
+        response:
+          id: "pay_abc123"
+          status: "succeeded"
+          amount: 100.00
+          currency: "USD"
+          created: 1705315800
+          payment_method_id: "pm_xyz789"
+
+  - name: "get_payment"
+    path: "/api/v2/payments/{payment_id}"
+    method: "GET"
+    description: "Retrieve payment details"
+    authentication:
+      type: "bearer"
+    
+    parameters:
+      - name: "payment_id"
+        type: "string"
+        required: true
+        in: "path"
+        description: "Payment ID to retrieve"
+    
+    response_schema:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+        status:
+          type: "string"
+        amount:
+          type: "number"
+        currency:
+          type: "string"
+        created:
+          type: "integer"
+    
+    examples:
+      - name: "Retrieve successful payment"
+        request:
+          payment_id: "pay_abc123"
+        response:
+          id: "pay_abc123"
+          status: "succeeded"
+          amount: 100.00
+          currency: "USD"
+          created: 1705315800
+
+  - name: "refund_payment"
+    path: "/api/v2/payments/{payment_id}/refund"
+    method: "POST"
+    description: "Refund a payment"
+    authentication:
+      type: "bearer"
+    
+    parameters:
+      - name: "payment_id"
+        type: "string"
+        required: true
+        in: "path"
+      
+      - name: "amount"
+        type: "number"
+        required: false
+        description: "Refund amount (defaults to full amount)"
+    
+    request_schema:
+      type: "object"
+      properties:
+        amount:
+          type: "number"
+          description: "Partial refund amount"
+        reason:
+          type: "string"
+          enum: ["duplicate", "fraudulent", "requested_by_customer"]
+    
+    response_schema:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+        payment_id:
+          type: "string"
+        amount:
+          type: "number"
+        status:
+          type: "string"
+        created:
+          type: "integer"
+    
+    examples:
+      - name: "Full refund"
+        request:
+          payment_id: "pay_abc123"
+          reason: "requested_by_customer"
+        response:
+          id: "ref_def456"
+          payment_id: "pay_abc123"
+          amount: 100.00
+          status: "succeeded"
+          created: 1705316400
+
+test_scenarios:
+  - scenario: "Standard payment"
+    natural_language: "Process payment of 150 dollars"
+    expected_endpoint: "create_payment"
+    expected_amount: 150.00
+  
+  - scenario: "Payment with email"
+    natural_language: "Create payment for 75.50 USD with email test@example.com"
+    expected_amount: 75.50
+    expected_email: "test@example.com"
+  
+  - scenario: "Refund request"
+    natural_language: "Refund payment pay_abc123"
+    expected_endpoint: "refund_payment"
+    expected_payment_id: "pay_abc123"
+
+metadata:
+  api_provider: "Generic Payment Processor"
+  environment: "sandbox"
+  rate_limit: "100 requests per second"
+  documentation_url: "https://api.example.com/docs"
+  version_history:
+    - version: "2.1.0"
+      date: "2024-01-10"
+      changes: "Added refund endpoint"
+    - version: "2.0.0"
+      date: "2023-12-01"
+      changes: "Major version update with breaking changes"
+

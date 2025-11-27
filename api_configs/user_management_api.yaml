@@ -1,0 +1,180 @@
+name: "User Management API"
+version: "1.0.0"
+description: "User account management and authentication API"
+base_url: "${ENV_BASE_URL}"
+
+endpoints:
+  - name: "create_user"
+    path: "/api/v1/users"
+    method: "POST"
+    description: "Create a new user account"
+    authentication:
+      type: "api_key"
+      header: "X-API-Key"
+    
+    parameters:
+      - name: "username"
+        type: "string"
+        required: true
+        description: "Unique username"
+      
+      - name: "email"
+        type: "string"
+        required: true
+        format: "email"
+        description: "User email address"
+      
+      - name: "password"
+        type: "string"
+        required: true
+        description: "User password (min 8 characters)"
+    
+    request_schema:
+      type: "object"
+      required: ["username", "email", "password"]
+      properties:
+        username:
+          type: "string"
+          minLength: 3
+          maxLength: 50
+          pattern: "^[a-zA-Z0-9_]+$"
+        email:
+          type: "string"
+          format: "email"
+        password:
+          type: "string"
+          minLength: 8
+        first_name:
+          type: "string"
+        last_name:
+          type: "string"
+        role:
+          type: "string"
+          enum: ["user", "admin"]
+          default: "user"
+    
+    response_schema:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+        username:
+          type: "string"
+        email:
+          type: "string"
+        role:
+          type: "string"
+        created_at:
+          type: "string"
+          format: "date-time"
+    
+    examples:
+      - name: "Create standard user"
+        request:
+          username: "johndoe"
+          email: "john@example.com"
+          password: "SecurePass123"
+          first_name: "John"
+          last_name: "Doe"
+        response:
+          id: "usr_abc123"
+          username: "johndoe"
+          email: "john@example.com"
+          role: "user"
+          created_at: "2024-01-15T10:00:00Z"
+
+  - name: "get_user"
+    path: "/api/v1/users/{user_id}"
+    method: "GET"
+    description: "Retrieve user details"
+    authentication:
+      type: "bearer"
+    
+    parameters:
+      - name: "user_id"
+        type: "string"
+        required: true
+        in: "path"
+        description: "User ID"
+    
+    response_schema:
+      type: "object"
+      properties:
+        id:
+          type: "string"
+        username:
+          type: "string"
+        email:
+          type: "string"
+        role:
+          type: "string"
+        created_at:
+          type: "string"
+        last_login:
+          type: "string"
+    
+    examples:
+      - name: "Get user by ID"
+        request:
+          user_id: "usr_abc123"
+        response:
+          id: "usr_abc123"
+          username: "johndoe"
+          email: "john@example.com"
+          role: "user"
+          created_at: "2024-01-15T10:00:00Z"
+          last_login: "2024-01-16T14:30:00Z"
+
+  - name: "update_user"
+    path: "/api/v1/users/{user_id}"
+    method: "PUT"
+    description: "Update user information"
+    authentication:
+      type: "bearer"
+    
+    parameters:
+      - name: "user_id"
+        type: "string"
+        required: true
+        in: "path"
+    
+    request_schema:
+      type: "object"
+      properties:
+        email:
+          type: "string"
+          format: "email"
+        first_name:
+          type: "string"
+        last_name:
+          type: "string"
+        role:
+          type: "string"
+          enum: ["user", "admin"]
+    
+    examples:
+      - name: "Update user email"
+        request:
+          user_id: "usr_abc123"
+          email: "newemail@example.com"
+        response:
+          id: "usr_abc123"
+          email: "newemail@example.com"
+          updated_at: "2024-01-16T15:00:00Z"
+
+test_scenarios:
+  - scenario: "Create new user"
+    natural_language: "Create user with username testuser and email test@example.com"
+    expected_endpoint: "create_user"
+  
+  - scenario: "Fetch user details"
+    natural_language: "Get user details for usr_abc123"
+    expected_endpoint: "get_user"
+    expected_user_id: "usr_abc123"
+
+metadata:
+  api_provider: "Internal"
+  environment: "development"
+  rate_limit: "1000 requests per minute"
+  documentation_url: "https://docs.internal.com/users-api"
+
