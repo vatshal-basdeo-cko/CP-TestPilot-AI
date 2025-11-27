@@ -89,27 +89,41 @@ TestPilot AI is an intelligent API testing platform designed for development and
    cd CP-TestPilot-AI
    ```
 
-2. **Configure environment**
+2. **Quick start (recommended)**
    ```bash
-   cp .env.example .env
+   make quickstart
+   ```
+   
+   This will:
+   - Check prerequisites (Docker, Docker Compose)
+   - Create .env file
+   - Start infrastructure services
+   - Initialize databases
+   
+3. **Or manual setup:**
+   ```bash
+   # Setup
+   make setup
+   
    # Edit .env and add your LLM API key
    nano .env
+   
+   # Start services
+   make start
    ```
 
-3. **Start all services**
+4. **Verify everything is running**
    ```bash
-   docker-compose up -d
-   ```
-
-4. **Wait for services to initialize** (~2-3 minutes)
-   ```bash
-   docker-compose logs -f
+   make status
+   make health
    ```
 
 5. **Access the application**
    - Frontend: http://localhost:3000
    - API Gateway: http://localhost:8000
    - Default credentials: `admin` / `admin123`
+
+**See [MAKEFILE_GUIDE.md](MAKEFILE_GUIDE.md) for all available commands.**
 
 ### First Test
 
