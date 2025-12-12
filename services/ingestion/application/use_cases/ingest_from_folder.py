@@ -4,9 +4,9 @@ from pathlib import Path
 from typing import List, Optional
 from uuid import UUID
 
-from ...domain.entities.ingestion_result import IngestionResult
-from ...domain.value_objects.source_type import SourceType
-from .ingest_from_file import IngestFromFileUseCase
+from domain.entities.ingestion_result import IngestionResult
+from domain.value_objects.source_type import SourceType
+from application.use_cases.ingest_from_file import IngestFromFileUseCase
 
 logger = logging.getLogger(__name__)
 

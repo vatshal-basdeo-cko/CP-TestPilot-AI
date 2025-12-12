@@ -7,16 +7,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .controllers.ingestion_controller import router as ingestion_router
-from .dtos.ingestion_dtos import HealthResponse
-from ..infrastructure.adapters import (
+from api.controllers.ingestion_controller import router as ingestion_router
+from api.dtos.ingestion_dtos import HealthResponse
+from infrastructure.adapters import (
     FileReaderAdapter,
     PostmanParser,
     EmbeddingService,
     QdrantAdapter,
     PostgresRepository,
 )
-from ..application.use_cases import (
+from application.use_cases import (
     IngestFromFileUseCase,
     IngestFromFolderUseCase,
     IngestPostmanCollectionUseCase,

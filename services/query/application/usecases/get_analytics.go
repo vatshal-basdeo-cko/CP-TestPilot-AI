@@ -29,3 +29,6 @@ func (uc *GetAnalyticsUseCase) GetByAPI(ctx context.Context, apiSpecID uuid.UUID
 	return uc.repo.GetAPIAnalytics(ctx, apiSpecID)
 }
 
+
+
+

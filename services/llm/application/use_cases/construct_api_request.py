@@ -2,10 +2,10 @@
 import logging
 from typing import Optional
 
-from ...domain.entities.test_request import TestRequest
-from ...domain.entities.api_call import APICall
-from ...domain.entities.retrieval_context import RetrievalContext
-from ...domain.entities.clarification import Clarification
+from domain.entities.test_request import TestRequest
+from domain.entities.api_call import APICall
+from domain.entities.retrieval_context import RetrievalContext
+from domain.entities.clarification import Clarification
 
 logger = logging.getLogger(__name__)
 

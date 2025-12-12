@@ -3,7 +3,7 @@ import logging
 from typing import List
 from uuid import UUID
 
-from ...domain.entities.retrieval_context import RetrievalContext
+from domain.entities.retrieval_context import RetrievalContext
 
 logger = logging.getLogger(__name__)
 

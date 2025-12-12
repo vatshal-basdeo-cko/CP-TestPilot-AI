@@ -2,7 +2,7 @@
 import logging
 from typing import Dict, Any
 
-from ...domain.entities.test_request import TestRequest
+from domain.entities.test_request import TestRequest
 
 logger = logging.getLogger(__name__)
 

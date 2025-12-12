@@ -130,3 +130,6 @@ func (h *QueryHandler) HealthCheck(c *gin.Context) {
 	})
 }
 
+
+
+

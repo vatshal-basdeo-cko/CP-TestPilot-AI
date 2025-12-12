@@ -5,11 +5,11 @@ from pathlib import Path
 from typing import Optional
 from uuid import UUID
 
-from ...domain.entities.api_specification import APISpecification
-from ...domain.entities.ingestion_result import IngestionResult
-from ...domain.value_objects.source_type import SourceType
-from ...domain.value_objects.version import Version
-from ...domain.repositories.ingestion_repository import IngestionRepository
+from domain.entities.api_specification import APISpecification
+from domain.entities.ingestion_result import IngestionResult
+from domain.value_objects.source_type import SourceType
+from domain.value_objects.version import Version
+from domain.repositories.ingestion_repository import IngestionRepository
 
 logger = logging.getLogger(__name__)
 

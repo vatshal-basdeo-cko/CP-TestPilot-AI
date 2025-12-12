@@ -3,8 +3,8 @@ import hashlib
 import logging
 from typing import List, Tuple
 
-from ...domain.entities.api_specification import APISpecification
-from ...domain.repositories.ingestion_repository import IngestionRepository
+from domain.entities.api_specification import APISpecification
+from domain.repositories.ingestion_repository import IngestionRepository
 
 logger = logging.getLogger(__name__)
 

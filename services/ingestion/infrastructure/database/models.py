@@ -5,10 +5,10 @@ from sqlalchemy import Column, String, DateTime, Integer, Text
 from sqlalchemy.dialects.postgresql import UUID as PGUUID, JSONB
 from sqlalchemy.orm import declarative_base
 
-from ...domain.entities.api_specification import APISpecification
-from ...domain.entities.ingestion_result import IngestionResult
-from ...domain.value_objects.version import Version
-from ...domain.value_objects.source_type import SourceType
+from domain.entities.api_specification import APISpecification
+from domain.entities.ingestion_result import IngestionResult
+from domain.value_objects.version import Version
+from domain.value_objects.source_type import SourceType
 
 Base = declarative_base()
 

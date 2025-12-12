@@ -3,8 +3,8 @@ from abc import ABC, abstractmethod
 from typing import List, Optional
 from uuid import UUID
 
-from ..entities.api_specification import APISpecification
-from ..entities.ingestion_result import IngestionResult
+from domain.entities.api_specification import APISpecification
+from domain.entities.ingestion_result import IngestionResult
 
 
 class IngestionRepository(ABC):

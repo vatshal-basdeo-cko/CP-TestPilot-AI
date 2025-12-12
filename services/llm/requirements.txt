@@ -8,6 +8,7 @@ pydantic==2.5.0
 # LLM Providers
 openai==1.6.1
 anthropic==0.8.1
+google-generativeai==0.3.2
 
 # LangChain (optional, for advanced RAG)
 langchain==0.1.0

@@ -2,8 +2,8 @@
 import logging
 from typing import List, Dict, Any
 
-from ...domain.entities.ingestion_result import IngestionResult
-from ...domain.repositories.ingestion_repository import IngestionRepository
+from domain.entities.ingestion_result import IngestionResult
+from domain.repositories.ingestion_repository import IngestionRepository
 
 logger = logging.getLogger(__name__)
 

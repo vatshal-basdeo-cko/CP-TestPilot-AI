@@ -5,10 +5,10 @@ from uuid import UUID
 from sqlalchemy import select, desc
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
-from ...domain.entities.api_specification import APISpecification
-from ...domain.entities.ingestion_result import IngestionResult
-from ...domain.repositories.ingestion_repository import IngestionRepository
-from ..database.models import APISpecificationModel, IngestionLogModel
+from domain.entities.api_specification import APISpecification
+from domain.entities.ingestion_result import IngestionResult
+from domain.repositories.ingestion_repository import IngestionRepository
+from infrastructure.database.models import APISpecificationModel, IngestionLogModel
 
 logger = logging.getLogger(__name__)
 

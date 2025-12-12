@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from uuid import UUID
 import json
 
-from ..dtos.ingestion_dtos import (
+from api.dtos.ingestion_dtos import (
     IngestFileRequest,
     IngestFolderRequest,
     IngestPostmanRequest,
@@ -14,13 +14,13 @@ from ..dtos.ingestion_dtos import (
     APISpecificationResponse,
     IngestionStatusResponse,
 )
-from ...application.use_cases import (
+from application.use_cases import (
     IngestFromFileUseCase,
     IngestFromFolderUseCase,
     IngestPostmanCollectionUseCase,
     GetIngestionStatusUseCase,
 )
-from ...infrastructure.adapters import PostgresRepository
+from infrastructure.adapters import PostgresRepository
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1", tags=["ingestion"])

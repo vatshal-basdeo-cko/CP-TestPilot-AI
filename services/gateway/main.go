@@ -90,3 +90,6 @@ func initDatabase(databaseURL string) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
+
+
+

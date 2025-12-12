@@ -4,8 +4,8 @@ from datetime import datetime
 from typing import Optional, Dict, Any
 from uuid import UUID, uuid4
 
-from ..value_objects.version import Version
-from ..value_objects.source_type import SourceType
+from domain.value_objects.version import Version
+from domain.value_objects.source_type import SourceType
 
 
 @dataclass

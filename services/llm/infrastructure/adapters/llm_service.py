@@ -25,8 +25,12 @@ class LLMService:
             from .anthropic_adapter import AnthropicAdapter
             api_key = os.getenv("ANTHROPIC_API_KEY")
             return AnthropicAdapter(api_key)
+        elif provider == "gemini":
+            from .gemini_adapter import GeminiAdapter
+            api_key = os.getenv("GEMINI_API_KEY")
+            return GeminiAdapter(api_key)
         else:
-            raise ValueError(f"Unsupported provider: {provider}")
+            raise ValueError(f"Unsupported provider: {provider}. Supported: openai, anthropic, gemini")
     
     def _load_prompts(self):
         """Load prompt templates."""

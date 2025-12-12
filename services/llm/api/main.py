@@ -7,16 +7,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .dtos.llm_dtos import (
+from api.dtos.llm_dtos import (
     ParseRequestDTO,
     ConstructResponseDTO,
     APICallDTO,
     ClarificationDTO,
     HealthResponse,
 )
-from ..domain.entities.test_request import TestRequest
-from ..infrastructure.adapters import LLMService, FakerAdapter, QdrantSearchAdapter
-from ..application.use_cases import (
+from domain.entities.test_request import TestRequest
+from infrastructure.adapters import LLMService, FakerAdapter, QdrantSearchAdapter
+from application.use_cases import (
     ParseNaturalLanguageUseCase,
     RetrieveAPIContextUseCase,
     ConstructAPIRequestUseCase,

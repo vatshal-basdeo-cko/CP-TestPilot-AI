@@ -34,10 +34,11 @@ services:
     networks:
       - testpilot-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      test: ["CMD-SHELL", "timeout 5 bash -c '</dev/tcp/localhost/6333' || exit 1"]
       interval: 10s
-      timeout: 5s
-      retries: 5
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
   # Ingestion Service (Python)
   ingestion:
@@ -90,7 +91,8 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
       - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
-      - DEFAULT_LLM_PROVIDER=${DEFAULT_LLM_PROVIDER:-openai}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DEFAULT_LLM_PROVIDER=${DEFAULT_LLM_PROVIDER:-gemini}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     ports:
       - "${LLM_SERVICE_PORT:-8002}:8002"
@@ -114,6 +116,7 @@ services:
       dockerfile: Dockerfile
     container_name: testpilot-execution
     environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER:-testpilot}:${POSTGRES_PASSWORD:-changeme_in_production}@postgres:5432/${POSTGRES_DB:-testpilot}?sslmode=disable
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - POSTGRES_DB=${POSTGRES_DB:-testpilot}
@@ -166,6 +169,7 @@ services:
       dockerfile: Dockerfile
     container_name: testpilot-query
     environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER:-testpilot}:${POSTGRES_PASSWORD:-changeme_in_production}@postgres:5432/${POSTGRES_DB:-testpilot}?sslmode=disable
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - POSTGRES_DB=${POSTGRES_DB:-testpilot}
@@ -192,6 +196,7 @@ services:
       dockerfile: Dockerfile
     container_name: testpilot-gateway
     environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER:-testpilot}:${POSTGRES_PASSWORD:-changeme_in_production}@postgres:5432/${POSTGRES_DB:-testpilot}?sslmode=disable
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - POSTGRES_DB=${POSTGRES_DB:-testpilot}

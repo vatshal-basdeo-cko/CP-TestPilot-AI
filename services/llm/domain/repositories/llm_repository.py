@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from uuid import UUID
 
-from ..entities.test_request import TestRequest
+from domain.entities.test_request import TestRequest
 
 
 class LLMRepository(ABC):
