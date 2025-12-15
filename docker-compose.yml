@@ -40,7 +40,7 @@ services:
       retries: 10
       start_period: 30s
 
-  # Ingestion Service (Python)
+  # Ingestion Service (Go)
   ingestion:
     build:
       context: ./services/ingestion
@@ -57,6 +57,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - API_CONFIGS_PATH=/app/api_configs
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - SERVER_PORT=8001
     ports:
       - "${INGESTION_SERVICE_PORT:-8001}:8001"
     volumes:
@@ -74,7 +75,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # LLM Service (Python)
+  # LLM Service (Go)
   llm:
     build:
       context: ./services/llm
@@ -90,11 +91,10 @@ services:
       - QDRANT_PORT=6333
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
-      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - DEFAULT_LLM_PROVIDER=${DEFAULT_LLM_PROVIDER:-gemini}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - SERVER_PORT=8002
     ports:
       - "${LLM_SERVICE_PORT:-8002}:8002"
     depends_on:
@@ -137,7 +137,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # Validation Service (C#)
+  # Validation Service (Go)
   validation:
     build:
       context: ./services/validation
@@ -150,6 +150,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-testpilot}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme_in_production}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - SERVER_PORT=8004
     ports:
       - "${VALIDATION_SERVICE_PORT:-8004}:8004"
     depends_on:
@@ -253,4 +254,3 @@ volumes:
 networks:
   testpilot-network:
     driver: bridge
-
