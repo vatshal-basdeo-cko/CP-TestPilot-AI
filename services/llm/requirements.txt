@@ -5,21 +5,16 @@ fastapi==0.104.1
 uvicorn[standard]==0.24.0
 pydantic==2.5.0
 
-# LLM Providers
+# LLM Providers (API-based, lightweight)
 openai==1.6.1
 anthropic==0.8.1
 google-generativeai==0.3.2
 
-# LangChain (optional, for advanced RAG)
-langchain==0.1.0
-langchain-openai==0.0.2
-langchain-anthropic==0.0.1
-
 # Vector DB
 qdrant-client==1.7.0
 
-# Embeddings
-sentence-transformers==2.2.2
+# Embeddings via OpenAI (no local ML needed)
+tiktoken==0.5.2
 
 # Test data generation
 faker==21.0.0
@@ -34,4 +29,3 @@ httpx==0.25.2
 # Utilities
 python-dotenv==1.0.0
 python-json-logger==2.0.7
-

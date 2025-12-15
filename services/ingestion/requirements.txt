@@ -17,9 +17,9 @@ alembic==1.13.0
 # Vector database
 qdrant-client==1.7.0
 
-# Embeddings
-sentence-transformers==2.2.2
-torch==2.1.0
+# Embeddings via OpenAI API (lightweight, no local ML)
+openai==1.6.1
+tiktoken==0.5.2
 
 # YAML/JSON parsing
 pyyaml==6.0.1

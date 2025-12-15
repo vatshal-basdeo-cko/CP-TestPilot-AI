@@ -24,7 +24,7 @@ class APISpecificationModel(Base):
     source_type = Column(String(50), nullable=False)
     source_path = Column(Text, nullable=True)
     content_hash = Column(String(64), nullable=False)
-    metadata = Column(JSONB, nullable=True)
+    api_metadata = Column("metadata", JSONB, nullable=True)  # Renamed to avoid SQLAlchemy reserved name
     created_at = Column(DateTime, nullable=False)
     updated_at = Column(DateTime, nullable=False)
     created_by = Column(PGUUID(as_uuid=True), nullable=True)
@@ -38,7 +38,7 @@ class APISpecificationModel(Base):
             source_type=SourceType(self.source_type),
             source_path=self.source_path,
             content_hash=self.content_hash,
-            metadata=self.metadata or {},
+            metadata=self.api_metadata or {},
             created_at=self.created_at,
             updated_at=self.updated_at,
             created_by=self.created_by
@@ -54,7 +54,7 @@ class APISpecificationModel(Base):
             source_type=entity.source_type.value,
             source_path=entity.source_path,
             content_hash=entity.content_hash,
-            metadata=entity.metadata,
+            api_metadata=entity.metadata,
             created_at=entity.created_at,
             updated_at=entity.updated_at,
             created_by=entity.created_by
@@ -64,7 +64,7 @@ class APISpecificationModel(Base):
         """Update model from entity."""
         self.name = entity.name
         self.version = str(entity.version)
-        self.metadata = entity.metadata
+        self.api_metadata = entity.metadata
         self.updated_at = entity.updated_at
 
 
