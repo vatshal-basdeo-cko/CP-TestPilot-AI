@@ -1,4 +1,4 @@
-.PHONY: help setup start stop restart status logs clean build test health db-shell qdrant-ui dev
+.PHONY: help setup start stop restart status logs clean build test health db-shell qdrant-ui dev frontend-dev frontend-build frontend-install
 
 # Colors for output
 BLUE := \033[0;34m
@@ -38,7 +38,13 @@ help:
 	@echo "$(GREEN)Build:$(NC)"
 	@echo "  make build          - Build all services"
 	@echo "  make build-ingestion- Build ingestion service only"
+	@echo "  make build-frontend - Build frontend only"
 	@echo "  make rebuild        - Rebuild and restart all services"
+	@echo ""
+	@echo "$(GREEN)Frontend:$(NC)"
+	@echo "  make frontend-install - Install frontend dependencies"
+	@echo "  make frontend-dev     - Run frontend in development mode"
+	@echo "  make frontend-build   - Build frontend for production"
 	@echo ""
 	@echo "$(GREEN)Testing:$(NC)"
 	@echo "  make test           - Run all tests"
@@ -182,14 +188,32 @@ health:
 	@echo "$(BLUE)Health Checks$(NC)"
 	@echo "=============="
 	@echo ""
-	@echo "$(YELLOW)Ingestion Service:$(NC)"
-	@curl -s -f http://localhost:8001/health > /dev/null 2>&1 && echo "$(GREEN)✅ Healthy$(NC)" || echo "$(RED)❌ Not responding$(NC)"
+	@echo "$(YELLOW)PostgreSQL:$(NC)"
+	@docker exec testpilot-postgres pg_isready -U testpilot > /dev/null 2>&1 && echo "$(GREEN)✅ Ready$(NC)" || echo "$(RED)❌ Not ready$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Qdrant:$(NC)"
 	@curl -s -f http://localhost:6333/healthz > /dev/null 2>&1 && echo "$(GREEN)✅ Healthy$(NC)" || echo "$(RED)❌ Not responding$(NC)"
 	@echo ""
-	@echo "$(YELLOW)PostgreSQL:$(NC)"
-	@docker exec testpilot-postgres pg_isready -U testpilot > /dev/null 2>&1 && echo "$(GREEN)✅ Ready$(NC)" || echo "$(RED)❌ Not ready$(NC)"
+	@echo "$(YELLOW)Gateway:$(NC)"
+	@curl -s -f http://localhost:8000/health > /dev/null 2>&1 && echo "$(GREEN)✅ Healthy$(NC)" || echo "$(RED)❌ Not responding$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Ingestion Service:$(NC)"
+	@curl -s -f http://localhost:8001/health > /dev/null 2>&1 && echo "$(GREEN)✅ Healthy$(NC)" || echo "$(RED)❌ Not responding$(NC)"
+	@echo ""
+	@echo "$(YELLOW)LLM Service:$(NC)"
+	@curl -s -f http://localhost:8002/health > /dev/null 2>&1 && echo "$(GREEN)✅ Healthy$(NC)" || echo "$(RED)❌ Not responding$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Execution Service:$(NC)"
+	@curl -s -f http://localhost:8003/health > /dev/null 2>&1 && echo "$(GREEN)✅ Healthy$(NC)" || echo "$(RED)❌ Not responding$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Validation Service:$(NC)"
+	@curl -s -f http://localhost:8004/health > /dev/null 2>&1 && echo "$(GREEN)✅ Healthy$(NC)" || echo "$(RED)❌ Not responding$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Query Service:$(NC)"
+	@curl -s -f http://localhost:8005/health > /dev/null 2>&1 && echo "$(GREEN)✅ Healthy$(NC)" || echo "$(RED)❌ Not responding$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Frontend:$(NC)"
+	@curl -s -f http://localhost:3000 > /dev/null 2>&1 && echo "$(GREEN)✅ Healthy$(NC)" || echo "$(RED)❌ Not responding$(NC)"
 
 ## logs: View logs for all services
 logs:
@@ -215,6 +239,22 @@ logs-llm:
 logs-gateway:
 	@docker-compose logs -f gateway
 
+## logs-frontend: View Frontend logs
+logs-frontend:
+	@docker-compose logs -f frontend
+
+## logs-execution: View Execution service logs
+logs-execution:
+	@docker-compose logs -f execution
+
+## logs-validation: View Validation service logs
+logs-validation:
+	@docker-compose logs -f validation
+
+## logs-query: View Query service logs
+logs-query:
+	@docker-compose logs -f query
+
 ## build: Build all services
 build:
 	@echo "$(BLUE)Building all services...$(NC)"
@@ -232,6 +272,18 @@ build-llm:
 	@echo "$(BLUE)Building LLM service...$(NC)"
 	@docker-compose build llm
 	@echo "$(GREEN)✅ LLM service built$(NC)"
+
+## build-frontend: Build frontend
+build-frontend:
+	@echo "$(BLUE)Building frontend...$(NC)"
+	@docker-compose build frontend
+	@echo "$(GREEN)✅ Frontend built$(NC)"
+
+## build-gateway: Build Gateway service
+build-gateway:
+	@echo "$(BLUE)Building gateway service...$(NC)"
+	@docker-compose build gateway
+	@echo "$(GREEN)✅ Gateway service built$(NC)"
 
 ## rebuild: Rebuild and restart all services
 rebuild:
@@ -306,4 +358,50 @@ check-ports:
 			echo "$(GREEN)✅ Port $$port is available$(NC)"; \
 		fi; \
 	done
+
+## frontend-install: Install frontend dependencies
+frontend-install:
+	@echo "$(BLUE)Installing frontend dependencies...$(NC)"
+	@cd frontend && npm install --registry=https://registry.npmjs.org/
+	@echo "$(GREEN)✅ Frontend dependencies installed$(NC)"
+
+## frontend-dev: Run frontend in development mode
+frontend-dev:
+	@echo "$(BLUE)Starting frontend development server...$(NC)"
+	@echo "$(YELLOW)Frontend will be available at http://localhost:3000$(NC)"
+	@echo "$(YELLOW)Make sure the backend services are running (make start)$(NC)"
+	@cd frontend && npm run dev
+
+## frontend-build: Build frontend for production
+frontend-build:
+	@echo "$(BLUE)Building frontend for production...$(NC)"
+	@cd frontend && npm run build
+	@echo "$(GREEN)✅ Frontend built$(NC)"
+	@echo "$(YELLOW)Production files are in frontend/dist$(NC)"
+
+## frontend-preview: Preview production build
+frontend-preview:
+	@echo "$(BLUE)Starting frontend preview server...$(NC)"
+	@cd frontend && npm run preview
+
+## open-frontend: Open frontend in browser
+open-frontend:
+	@echo "$(BLUE)Opening frontend...$(NC)"
+	@open http://localhost:3000 || xdg-open http://localhost:3000 || echo "Open http://localhost:3000 in your browser"
+
+## test-gateway: Test gateway endpoints
+test-gateway:
+	@echo "$(BLUE)Testing Gateway Service$(NC)"
+	@echo "========================"
+	@echo ""
+	@echo "$(YELLOW)1. Health check...$(NC)"
+	@curl -s http://localhost:8000/health | python3 -m json.tool && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
+	@echo ""
+	@echo "$(YELLOW)2. All services health...$(NC)"
+	@curl -s http://localhost:8000/health/all | python3 -m json.tool && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
+
+## test-all: Test all service endpoints
+test-all: test-gateway test-ingestion
+	@echo ""
+	@echo "$(GREEN)✅ All tests completed$(NC)"
 
