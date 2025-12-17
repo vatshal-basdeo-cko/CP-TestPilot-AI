@@ -14,7 +14,7 @@ type Config struct {
 	PostgresPass   string
 	QdrantHost     string
 	QdrantPort     string
-	OpenAIAPIKey   string
+	GeminiAPIKey   string
 	APIConfigsPath string
 	LogLevel       string
 }
@@ -30,7 +30,7 @@ func Load() *Config {
 		PostgresPass:   getEnv("POSTGRES_PASSWORD", "changeme_in_production"),
 		QdrantHost:     getEnv("QDRANT_HOST", "localhost"),
 		QdrantPort:     getEnv("QDRANT_PORT", "6333"),
-		OpenAIAPIKey:   getEnv("OPENAI_API_KEY", ""),
+		GeminiAPIKey:   getEnv("GEMINI_API_KEY", ""),
 		APIConfigsPath: getEnv("API_CONFIGS_PATH", "./api_configs"),
 		LogLevel:       getEnv("LOG_LEVEL", "INFO"),
 	}
@@ -52,4 +52,3 @@ func getEnv(key, defaultValue string) string {
 	}
 	return defaultValue
 }
-

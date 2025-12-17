@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -16,7 +17,7 @@ import (
 // LLMHandler handles LLM-related HTTP requests
 type LLMHandler struct {
 	providerFactory *adapters.ProviderFactory
-	openaiProvider  *adapters.OpenAIProvider
+	geminiEmbedding *adapters.GeminiEmbeddingAdapter
 	qdrantSearch    *adapters.QdrantSearchAdapter
 	faker           *adapters.FakerAdapter
 	postgresRepo    *adapters.PostgresRepository
@@ -25,14 +26,14 @@ type LLMHandler struct {
 // NewLLMHandler creates a new LLM handler
 func NewLLMHandler(
 	providerFactory *adapters.ProviderFactory,
-	openaiProvider *adapters.OpenAIProvider,
+	geminiEmbedding *adapters.GeminiEmbeddingAdapter,
 	qdrantSearch *adapters.QdrantSearchAdapter,
 	faker *adapters.FakerAdapter,
 	postgresRepo *adapters.PostgresRepository,
 ) *LLMHandler {
 	return &LLMHandler{
 		providerFactory: providerFactory,
-		openaiProvider:  openaiProvider,
+		geminiEmbedding: geminiEmbedding,
 		qdrantSearch:    qdrantSearch,
 		faker:           faker,
 		postgresRepo:    postgresRepo,
@@ -84,12 +85,13 @@ func (h *LLMHandler) ParseRequest(c *gin.Context) {
 		return
 	}
 
-	// Parse LLM response
+	// Parse LLM response - try to extract JSON from markdown if needed
 	var parseResult entities.ParseResult
-	if err := json.Unmarshal([]byte(response), &parseResult); err != nil {
-		// Try to extract JSON from response
+	jsonStr := extractJSON(response)
+	if err := json.Unmarshal([]byte(jsonStr), &parseResult); err != nil {
+		// Fallback if JSON parsing fails
 		parseResult = entities.ParseResult{
-			Intent:     "Unable to parse",
+			Intent:     "Unable to parse LLM response",
 			Confidence: 0.5,
 		}
 	}
@@ -116,10 +118,10 @@ func (h *LLMHandler) ParseRequest(c *gin.Context) {
 // ConstructRequest constructs an API request from parse result
 func (h *LLMHandler) ConstructRequest(c *gin.Context) {
 	var req struct {
-		ParseResult     map[string]interface{} `json:"parse_result" binding:"required"`
-		APIConfig       map[string]interface{} `json:"api_config,omitempty"`
-		GenerateData    bool                   `json:"generate_data"`
-		Provider        string                 `json:"provider,omitempty"`
+		ParseResult  map[string]interface{} `json:"parse_result" binding:"required"`
+		APIConfig    map[string]interface{} `json:"api_config,omitempty"`
+		GenerateData bool                   `json:"generate_data"`
+		Provider     string                 `json:"provider,omitempty"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -237,8 +239,8 @@ func (h *LLMHandler) Learn(c *gin.Context) {
 	learned, _ := h.postgresRepo.CheckIfLearnedEnough(c.Request.Context(), req.APISpecID)
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":            "recorded",
-		"pattern_learned":   learned,
+		"status":          "recorded",
+		"pattern_learned": learned,
 	})
 }
 
@@ -255,20 +257,20 @@ func (h *LLMHandler) ListProviders(c *gin.Context) {
 
 // retrieveAPIContext retrieves relevant API context using RAG
 func (h *LLMHandler) retrieveAPIContext(ctx context.Context, query string) (string, error) {
-	// Generate embedding for query
-	if h.openaiProvider == nil || !h.openaiProvider.IsAvailable() {
+	// Generate embedding for query using Gemini
+	if h.geminiEmbedding == nil || !h.geminiEmbedding.IsAvailable() {
 		return "No API context available (embeddings not configured)", nil
 	}
 
-	embedding, err := h.openaiProvider.GenerateEmbedding(ctx, query)
+	embedding, err := h.geminiEmbedding.GenerateEmbedding(ctx, query)
 	if err != nil {
-		return "No API context available (embedding failed)", nil
+		return "No API context available (embedding failed: " + err.Error() + ")", nil
 	}
 
 	// Search Qdrant
 	results, err := h.qdrantSearch.Search(embedding, 3)
 	if err != nil {
-		return "No API context available (search failed)", nil
+		return "No API context available (search failed: " + err.Error() + ")", nil
 	}
 
 	// Build context from results
@@ -285,3 +287,38 @@ func (h *LLMHandler) retrieveAPIContext(ctx context.Context, query string) (stri
 	return prompts.BuildAPIContext(contexts), nil
 }
 
+// extractJSON attempts to extract JSON from a response that may be wrapped in markdown
+func extractJSON(response string) string {
+	response = strings.TrimSpace(response)
+
+	// Try to extract JSON from markdown code block
+	if strings.Contains(response, "```json") {
+		start := strings.Index(response, "```json") + 7
+		end := strings.LastIndex(response, "```")
+		if start < end {
+			return strings.TrimSpace(response[start:end])
+		}
+	}
+
+	// Try to extract JSON from generic code block
+	if strings.Contains(response, "```") {
+		start := strings.Index(response, "```") + 3
+		// Skip language identifier if present
+		if idx := strings.Index(response[start:], "\n"); idx != -1 {
+			start += idx + 1
+		}
+		end := strings.LastIndex(response, "```")
+		if start < end {
+			return strings.TrimSpace(response[start:end])
+		}
+	}
+
+	// Try to find JSON object directly
+	if start := strings.Index(response, "{"); start != -1 {
+		if end := strings.LastIndex(response, "}"); end > start {
+			return response[start : end+1]
+		}
+	}
+
+	return response
+}

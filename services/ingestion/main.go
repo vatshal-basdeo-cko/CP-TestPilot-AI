@@ -41,13 +41,19 @@ func main() {
 	// Initialize adapters
 	fileParser := adapters.NewFileParser()
 	postmanParser := adapters.NewPostmanParser()
-	embeddingService := adapters.NewEmbeddingService(cfg.OpenAIAPIKey)
+	embeddingService := adapters.NewEmbeddingService(cfg.GeminiAPIKey)
 	qdrantAdapter := adapters.NewQdrantAdapter(cfg.QdrantURL(), "api-knowledge")
 	postgresRepo := adapters.NewPostgresRepository(pool)
 
-	// Ensure Qdrant collection exists
-	if err := qdrantAdapter.EnsureCollection(1536); err != nil {
+	// Ensure Qdrant collection exists (768 dimensions for Gemini embeddings)
+	if err := qdrantAdapter.EnsureCollection(768); err != nil {
 		log.Printf("Warning: Failed to ensure Qdrant collection: %v", err)
+	}
+
+	if cfg.GeminiAPIKey != "" {
+		log.Println("Gemini embeddings enabled")
+	} else {
+		log.Println("Warning: GEMINI_API_KEY not set - embeddings will be zero vectors")
 	}
 
 	// Initialize handlers
@@ -93,4 +99,3 @@ func main() {
 		os.Exit(1)
 	}
 }
-

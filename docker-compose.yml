@@ -54,7 +54,7 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme_in_production}
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
       - API_CONFIGS_PATH=/app/api_configs
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - SERVER_PORT=8001

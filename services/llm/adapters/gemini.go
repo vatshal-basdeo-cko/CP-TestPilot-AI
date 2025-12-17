@@ -57,7 +57,7 @@ type GeminiResponse struct {
 func NewGeminiProvider(apiKey string) *GeminiProvider {
 	return &GeminiProvider{
 		apiKey:     apiKey,
-		model:      "gemini-1.5-pro",
+		model:      "gemini-2.0-flash",
 		httpClient: &http.Client{},
 	}
 }
@@ -68,7 +68,7 @@ func (p *GeminiProvider) Complete(ctx context.Context, prompt string) (string, e
 		return "", fmt.Errorf("Gemini API key not configured")
 	}
 
-	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=%s", p.model, p.apiKey)
+	url := fmt.Sprintf("https://generativelanguage.googleapis.com/v1/models/%s:generateContent?key=%s", p.model, p.apiKey)
 
 	reqBody := GeminiRequest{
 		Contents: []GeminiContent{
@@ -133,4 +133,3 @@ func (p *GeminiProvider) Name() string {
 func (p *GeminiProvider) IsAvailable() bool {
 	return p.apiKey != ""
 }
-

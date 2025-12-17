@@ -49,8 +49,13 @@ func main() {
 	log.Printf("Available LLM providers: %v", providerFactory.ListAvailableProviders())
 	log.Printf("Default provider: %s", providerFactory.GetDefaultProviderName())
 
-	// Initialize OpenAI provider for embeddings
-	openaiProvider := adapters.NewOpenAIProvider(cfg.OpenAIAPIKey)
+	// Initialize Gemini embedding adapter for RAG
+	geminiEmbedding := adapters.NewGeminiEmbeddingAdapter(cfg.GeminiAPIKey)
+	if geminiEmbedding.IsAvailable() {
+		log.Println("Gemini embeddings enabled for RAG")
+	} else {
+		log.Println("Warning: Gemini embeddings not configured - RAG will not work")
+	}
 
 	// Initialize adapters
 	qdrantSearch := adapters.NewQdrantSearchAdapter(cfg.QdrantURL(), "api-knowledge")
@@ -60,7 +65,7 @@ func main() {
 	// Initialize handlers
 	llmHandler := handlers.NewLLMHandler(
 		providerFactory,
-		openaiProvider,
+		geminiEmbedding,
 		qdrantSearch,
 		faker,
 		postgresRepo,
@@ -96,4 +101,3 @@ func main() {
 		os.Exit(1)
 	}
 }
-
