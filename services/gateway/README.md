@@ -55,3 +55,6 @@ curl -X GET http://localhost:8000/api/v1/history \
 - `DATABASE_URL` - PostgreSQL connection string
 - `JWT_SECRET` - JWT signing secret (production)
 
+
+
+

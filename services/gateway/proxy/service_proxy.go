@@ -80,18 +80,43 @@ func (sp *ServiceProxy) RouteToService(c *gin.Context) {
 	path := c.Request.URL.Path
 
 	switch {
+	// Ingestion service routes
 	case strings.HasPrefix(path, "/api/v1/ingest"):
 		sp.ProxyRequest(c, "ingestion", path)
+	case strings.HasPrefix(path, "/api/v1/apis"):
+		sp.ProxyRequest(c, "ingestion", path)
+
+	// LLM service routes - handle both /api/v1/llm/* and direct paths
+	case strings.HasPrefix(path, "/api/v1/llm/"):
+		// Rewrite /api/v1/llm/X to /api/v1/X for the LLM service
+		newPath := strings.Replace(path, "/api/v1/llm/", "/api/v1/", 1)
+		sp.ProxyRequest(c, "llm", newPath)
 	case strings.HasPrefix(path, "/api/v1/parse"), strings.HasPrefix(path, "/api/v1/construct"):
 		sp.ProxyRequest(c, "llm", path)
-	case strings.HasPrefix(path, "/api/v1/execute"), strings.HasPrefix(path, "/api/v1/environments"):
+
+	// Execution service routes
+	case strings.HasPrefix(path, "/api/v1/execute"):
 		sp.ProxyRequest(c, "execution", path)
-	case strings.HasPrefix(path, "/api/v1/validate"), strings.HasPrefix(path, "/api/v1/rules"):
+	case strings.HasPrefix(path, "/api/v1/environments"):
+		sp.ProxyRequest(c, "execution", path)
+
+	// Validation service routes
+	case strings.HasPrefix(path, "/api/v1/validate"):
 		sp.ProxyRequest(c, "validation", path)
-	case strings.HasPrefix(path, "/api/v1/history"), strings.HasPrefix(path, "/api/v1/analytics"):
+	case strings.HasPrefix(path, "/api/v1/rules"):
+		sp.ProxyRequest(c, "validation", path)
+
+	// Query service routes
+	case strings.HasPrefix(path, "/api/v1/history"):
 		sp.ProxyRequest(c, "query", path)
+	case strings.HasPrefix(path, "/api/v1/analytics"):
+		sp.ProxyRequest(c, "query", path)
+
 	default:
 		c.JSON(http.StatusNotFound, gin.H{"error": "Route not found"})
 	}
 }
+
+
+
 

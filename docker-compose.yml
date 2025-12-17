@@ -34,12 +34,13 @@ services:
     networks:
       - testpilot-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      test: ["CMD-SHELL", "timeout 5 bash -c '</dev/tcp/localhost/6333' || exit 1"]
       interval: 10s
-      timeout: 5s
-      retries: 5
+      timeout: 10s
+      retries: 10
+      start_period: 30s
 
-  # Ingestion Service (Python)
+  # Ingestion Service (Go)
   ingestion:
     build:
       context: ./services/ingestion
@@ -53,8 +54,10 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme_in_production}
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
       - API_CONFIGS_PATH=/app/api_configs
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - SERVER_PORT=8001
     ports:
       - "${INGESTION_SERVICE_PORT:-8001}:8001"
     volumes:
@@ -72,7 +75,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # LLM Service (Python)
+  # LLM Service (Go)
   llm:
     build:
       context: ./services/llm
@@ -88,10 +91,10 @@ services:
       - QDRANT_PORT=6333
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
-      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
-      - DEFAULT_LLM_PROVIDER=${DEFAULT_LLM_PROVIDER:-openai}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DEFAULT_LLM_PROVIDER=${DEFAULT_LLM_PROVIDER:-gemini}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - SERVER_PORT=8002
     ports:
       - "${LLM_SERVICE_PORT:-8002}:8002"
     depends_on:
@@ -114,6 +117,7 @@ services:
       dockerfile: Dockerfile
     container_name: testpilot-execution
     environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER:-testpilot}:${POSTGRES_PASSWORD:-changeme_in_production}@postgres:5432/${POSTGRES_DB:-testpilot}?sslmode=disable
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - POSTGRES_DB=${POSTGRES_DB:-testpilot}
@@ -133,7 +137,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # Validation Service (C#)
+  # Validation Service (Go)
   validation:
     build:
       context: ./services/validation
@@ -146,6 +150,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER:-testpilot}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-changeme_in_production}
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - SERVER_PORT=8004
     ports:
       - "${VALIDATION_SERVICE_PORT:-8004}:8004"
     depends_on:
@@ -166,6 +171,7 @@ services:
       dockerfile: Dockerfile
     container_name: testpilot-query
     environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER:-testpilot}:${POSTGRES_PASSWORD:-changeme_in_production}@postgres:5432/${POSTGRES_DB:-testpilot}?sslmode=disable
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - POSTGRES_DB=${POSTGRES_DB:-testpilot}
@@ -192,6 +198,7 @@ services:
       dockerfile: Dockerfile
     container_name: testpilot-gateway
     environment:
+      - DATABASE_URL=postgres://${POSTGRES_USER:-testpilot}:${POSTGRES_PASSWORD:-changeme_in_production}@postgres:5432/${POSTGRES_DB:-testpilot}?sslmode=disable
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - POSTGRES_DB=${POSTGRES_DB:-testpilot}
@@ -247,4 +254,3 @@ volumes:
 networks:
   testpilot-network:
     driver: bridge
-

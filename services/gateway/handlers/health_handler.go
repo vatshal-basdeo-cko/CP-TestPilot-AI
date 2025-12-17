@@ -96,3 +96,6 @@ func (h *HealthHandler) ProxyHealth(c *gin.Context, serviceName string) {
 	c.Data(resp.StatusCode, "application/json", body)
 }
 
+
+
+

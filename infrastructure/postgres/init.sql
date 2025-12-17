@@ -196,8 +196,9 @@ ON CONFLICT (key) DO NOTHING;
 
 -- Insert default admin user (password: admin123)
 -- Note: This should be changed immediately in production
+-- Password: admin123 (bcrypt hash compatible with Go)
 INSERT INTO users (username, password_hash, role) VALUES
-    ('admin', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5lAWCb0pQw8Bq', 'admin')
+    ('admin', '$2b$12$edNxZHB7VurltIA6FuA8kuZbC2nf3n8mpsCv0aVf8dsQIPpRAS5Ry', 'admin')
 ON CONFLICT (username) DO NOTHING;
 
 -- Insert default QA environment

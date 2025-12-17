@@ -30,3 +30,6 @@ func SetupRouter(handler *handlers.QueryHandler) *gin.Engine {
 	return router
 }
 
+
+
+

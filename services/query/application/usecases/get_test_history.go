@@ -28,3 +28,6 @@ func (uc *GetTestHistoryUseCase) GetByID(ctx context.Context, id uuid.UUID) (*en
 	return uc.repo.FindExecutionByID(ctx, id)
 }
 
+
+
+

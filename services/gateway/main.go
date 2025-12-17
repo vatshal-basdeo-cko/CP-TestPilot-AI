@@ -43,23 +43,88 @@ func main() {
 	router.Use(middleware.CORSMiddleware())
 	router.Use(middleware.LoggingMiddleware())
 
-	// Public routes (no auth required)
-	router.POST("/api/v1/auth/login", authHandler.Login)
-	router.POST("/api/v1/auth/register", authHandler.Register)
+	// Health routes (no auth required)
 	router.GET("/health", healthHandler.GatewayHealth)
 	router.GET("/health/all", healthHandler.AllServicesHealth)
 
-	// Protected routes (auth required)
-	protected := router.Group("/api/v1")
-	protected.Use(middleware.AuthMiddleware())
+	// Auth routes (no auth required)
+	auth := router.Group("/api/v1/auth")
 	{
-		protected.GET("/auth/me", authHandler.Me)
-
-		// Proxy all other requests to backend services
-		protected.Any("/*path", func(c *gin.Context) {
-			serviceProxy.RouteToService(c)
-		})
+		auth.POST("/login", authHandler.Login)
+		auth.POST("/register", authHandler.Register)
 	}
+
+	// Protected auth routes
+	authProtected := router.Group("/api/v1/auth")
+	authProtected.Use(middleware.AuthMiddleware())
+	{
+		authProtected.GET("/me", authHandler.Me)
+	}
+
+	// Protected service proxy routes
+	// Ingestion service
+	router.Any("/api/v1/ingest/*path", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+	router.Any("/api/v1/apis", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+	router.Any("/api/v1/apis/*path", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+
+	// LLM service
+	router.Any("/api/v1/llm/*path", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+	router.Any("/api/v1/parse", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+	router.Any("/api/v1/construct", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+
+	// Execution service
+	router.Any("/api/v1/execute", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+	router.Any("/api/v1/execute/*path", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+	router.Any("/api/v1/environments", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+	router.Any("/api/v1/environments/*path", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+
+	// Validation service
+	router.Any("/api/v1/validate", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+	router.Any("/api/v1/validate/*path", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+	router.Any("/api/v1/rules", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+	router.Any("/api/v1/rules/*path", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+
+	// Query service
+	router.Any("/api/v1/history", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+	router.Any("/api/v1/history/*path", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+	router.Any("/api/v1/analytics", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+	router.Any("/api/v1/analytics/*path", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
 
 	// Start server
 	port := os.Getenv("SERVER_PORT")
@@ -89,4 +154,7 @@ func initDatabase(databaseURL string) (*pgxpool.Pool, error) {
 	log.Println("Successfully connected to database")
 	return pool, nil
 }
+
+
+
 

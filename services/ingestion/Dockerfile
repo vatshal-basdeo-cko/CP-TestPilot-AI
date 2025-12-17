@@ -1,31 +1,41 @@
-# Use Python 3.11 slim image
-FROM python:3.11-slim
+# Build stage
+FROM golang:1.23-alpine AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    g++ \
-    && rm -rf /var/lib/apt/lists/*
+# Install dependencies
+RUN apk add --no-cache git
 
-# Copy requirements
-COPY requirements.txt .
+# Copy go mod files
+COPY go.mod go.sum* ./
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Download dependencies
+RUN go mod download
 
-# Copy application code
+# Copy source code
 COPY . .
+
+# Build binary
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o ingestion .
+
+# Runtime stage
+FROM alpine:3.19
+
+WORKDIR /app
+
+# Install ca-certificates for HTTPS requests
+RUN apk --no-cache add ca-certificates curl
+
+# Copy binary from builder
+COPY --from=builder /app/ingestion .
 
 # Expose port
 EXPOSE 8001
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8001/health')"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8001/health || exit 1
 
-# Run the application
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8001"]
+# Run binary
+CMD ["./ingestion"]
 
