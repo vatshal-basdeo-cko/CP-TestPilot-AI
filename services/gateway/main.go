@@ -62,22 +62,67 @@ func main() {
 	}
 
 	// Protected service proxy routes
+	// Ingestion service
 	router.Any("/api/v1/ingest/*path", middleware.AuthMiddleware(), func(c *gin.Context) {
 		serviceProxy.RouteToService(c)
 	})
+	router.Any("/api/v1/apis", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+	router.Any("/api/v1/apis/*path", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+
+	// LLM service
 	router.Any("/api/v1/llm/*path", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+	router.Any("/api/v1/parse", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+	router.Any("/api/v1/construct", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+
+	// Execution service
+	router.Any("/api/v1/execute", middleware.AuthMiddleware(), func(c *gin.Context) {
 		serviceProxy.RouteToService(c)
 	})
 	router.Any("/api/v1/execute/*path", middleware.AuthMiddleware(), func(c *gin.Context) {
 		serviceProxy.RouteToService(c)
 	})
+	router.Any("/api/v1/environments", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+	router.Any("/api/v1/environments/*path", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+
+	// Validation service
+	router.Any("/api/v1/validate", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
 	router.Any("/api/v1/validate/*path", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+	router.Any("/api/v1/rules", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+	router.Any("/api/v1/rules/*path", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+
+	// Query service
+	router.Any("/api/v1/history", middleware.AuthMiddleware(), func(c *gin.Context) {
 		serviceProxy.RouteToService(c)
 	})
 	router.Any("/api/v1/history/*path", middleware.AuthMiddleware(), func(c *gin.Context) {
 		serviceProxy.RouteToService(c)
 	})
-	router.Any("/api/v1/apis/*path", middleware.AuthMiddleware(), func(c *gin.Context) {
+	router.Any("/api/v1/analytics", middleware.AuthMiddleware(), func(c *gin.Context) {
+		serviceProxy.RouteToService(c)
+	})
+	router.Any("/api/v1/analytics/*path", middleware.AuthMiddleware(), func(c *gin.Context) {
 		serviceProxy.RouteToService(c)
 	})
 
