@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -11,11 +10,15 @@ import (
 	"github.com/testpilot-ai/ingestion/adapters"
 	"github.com/testpilot-ai/ingestion/config"
 	"github.com/testpilot-ai/ingestion/handlers"
+	"github.com/testpilot-ai/shared/logger"
 )
 
 func main() {
 	// Load .env file if exists
 	_ = godotenv.Load()
+
+	// Initialize logger
+	logger.Init("ingestion")
 
 	// Load configuration
 	cfg := config.Load()
@@ -28,15 +31,17 @@ func main() {
 	// Connect to PostgreSQL
 	pool, err := pgxpool.New(context.Background(), cfg.DatabaseURL())
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		logger.Err(err).Msg("Failed to connect to database")
+		os.Exit(1)
 	}
 	defer pool.Close()
 
 	// Verify database connection
 	if err := pool.Ping(context.Background()); err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
+		logger.Err(err).Msg("Failed to ping database")
+		os.Exit(1)
 	}
-	log.Println("Connected to PostgreSQL")
+	logger.Info("Connected to PostgreSQL")
 
 	// Initialize adapters
 	fileParser := adapters.NewFileParser()
@@ -47,13 +52,13 @@ func main() {
 
 	// Ensure Qdrant collection exists (768 dimensions for Gemini embeddings)
 	if err := qdrantAdapter.EnsureCollection(768); err != nil {
-		log.Printf("Warning: Failed to ensure Qdrant collection: %v", err)
+		logger.Err(err).Msg("Failed to ensure Qdrant collection")
 	}
 
 	if cfg.GeminiAPIKey != "" {
-		log.Println("Gemini embeddings enabled")
+		logger.Info("Gemini embeddings enabled")
 	} else {
-		log.Println("Warning: GEMINI_API_KEY not set - embeddings will be zero vectors")
+		logger.Warn("GEMINI_API_KEY not set - embeddings will be zero vectors")
 	}
 
 	// Initialize handlers
@@ -65,8 +70,9 @@ func main() {
 		postgresRepo,
 	)
 
-	// Setup router
-	router := gin.Default()
+	// Setup router (use gin.New() to avoid default logger noise)
+	router := gin.New()
+	router.Use(gin.Recovery())
 
 	// Health check
 	router.GET("/health", ingestionHandler.Health)
@@ -93,9 +99,9 @@ func main() {
 		port = "8001"
 	}
 
-	log.Printf("Ingestion service starting on port %s", port)
+	logger.Infof("Ingestion service starting on port %s", port)
 	if err := router.Run(":" + port); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		logger.Err(err).Msg("Failed to start server")
 		os.Exit(1)
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/testpilot-ai/shared/logger"
 )
 
 // ServiceProxy handles proxying requests to backend services
@@ -28,8 +29,14 @@ func NewServiceProxy() *ServiceProxy {
 
 // ProxyRequest forwards a request to a backend service
 func (sp *ServiceProxy) ProxyRequest(c *gin.Context, serviceName, path string) {
+	requestID, _ := c.Get("request_id")
+	requestIDStr, _ := requestID.(string)
+	
 	baseURL, ok := sp.services[serviceName]
 	if !ok {
+		logger.WithRequestID(requestIDStr).Error().
+			Str("service", serviceName).
+			Msg("Service not found for proxying")
 		c.JSON(http.StatusBadGateway, gin.H{"error": "Service not found"})
 		return
 	}
@@ -43,6 +50,10 @@ func (sp *ServiceProxy) ProxyRequest(c *gin.Context, serviceName, path string) {
 	// Create request
 	req, err := http.NewRequest(c.Request.Method, targetURL, c.Request.Body)
 	if err != nil {
+		logger.WithRequestID(requestIDStr).Err(err).
+			Str("service", serviceName).
+			Str("url", targetURL).
+			Msg("Failed to create proxy request")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create request"})
 		return
 	}
@@ -58,10 +69,20 @@ func (sp *ServiceProxy) ProxyRequest(c *gin.Context, serviceName, path string) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
+		logger.WithRequestID(requestIDStr).Err(err).
+			Str("service", serviceName).
+			Str("url", targetURL).
+			Msg("Failed to contact backend service")
 		c.JSON(http.StatusBadGateway, gin.H{"error": "Failed to contact service"})
 		return
 	}
 	defer resp.Body.Close()
+
+	logger.WithRequestID(requestIDStr).Debug().
+		Str("service", serviceName).
+		Str("path", path).
+		Int("status", resp.StatusCode).
+		Msg("Proxied request to backend service")
 
 	// Copy response headers
 	for key, values := range resp.Header {
@@ -113,6 +134,11 @@ func (sp *ServiceProxy) RouteToService(c *gin.Context) {
 		sp.ProxyRequest(c, "query", path)
 
 	default:
+		requestID, _ := c.Get("request_id")
+		requestIDStr, _ := requestID.(string)
+		logger.WithRequestID(requestIDStr).Warn().
+			Str("path", path).
+			Msg("Route not found")
 		c.JSON(http.StatusNotFound, gin.H{"error": "Route not found"})
 	}
 }

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -14,10 +13,14 @@ import (
 	"github.com/testpilot-ai/query/api/handlers"
 	"github.com/testpilot-ai/query/application/usecases"
 	"github.com/testpilot-ai/query/infrastructure/adapters"
+	"github.com/testpilot-ai/shared/logger"
 )
 
 func main() {
 	_ = godotenv.Load()
+
+	// Initialize logger
+	logger.Init("query")
 
 	// Initialize database
 	databaseURL := os.Getenv("DATABASE_URL")
@@ -27,7 +30,8 @@ func main() {
 
 	pool, err := initDatabase(databaseURL)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		logger.Err(err).Msg("Failed to connect to database")
+		os.Exit(1)
 	}
 	defer pool.Close()
 
@@ -50,9 +54,10 @@ func main() {
 		port = "8005"
 	}
 
-	log.Printf("Starting Query Service on :%s", port)
+	logger.Infof("Starting Query Service on :%s", port)
 	if err := router.Run(":" + port); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		logger.Err(err).Msg("Failed to start server")
+		os.Exit(1)
 	}
 }
 
@@ -69,7 +74,7 @@ func initDatabase(databaseURL string) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("unable to ping database: %w", err)
 	}
 
-	log.Println("Successfully connected to database")
+	logger.Info("Successfully connected to database")
 	return pool, nil
 }
 

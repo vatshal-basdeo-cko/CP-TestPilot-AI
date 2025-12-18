@@ -11,6 +11,7 @@ import (
 
 	"github.com/testpilot-ai/execution/domain/entities"
 	"github.com/testpilot-ai/execution/domain/repositories"
+	"github.com/testpilot-ai/shared/logger"
 )
 
 // ExecuteAPICallUseCase handles API execution logic
@@ -60,6 +61,11 @@ func (uc *ExecuteAPICallUseCase) Execute(ctx context.Context, request *entities.
 		response.Success = false
 		response.ExecutionTimeMs = time.Since(startTime).Milliseconds()
 		
+		logger.WithContext(ctx).Err(err).
+			Str("method", request.Method).
+			Str("url", request.URL).
+			Msg("HTTP request failed")
+		
 		// Save failed execution
 		_ = uc.executionRepo.SaveExecution(ctx, request, response)
 		return response, err
@@ -93,7 +99,9 @@ func (uc *ExecuteAPICallUseCase) Execute(ctx context.Context, request *entities.
 	// Save execution to database
 	if err := uc.executionRepo.SaveExecution(ctx, request, response); err != nil {
 		// Log error but don't fail the execution
-		fmt.Printf("Failed to save execution: %v\n", err)
+		logger.WithContext(ctx).Err(err).
+			Str("request_id", request.ID.String()).
+			Msg("Failed to save execution to database")
 	}
 
 	return response, nil

@@ -6,14 +6,17 @@ WORKDIR /app
 # Install dependencies
 RUN apk add --no-cache git
 
-# Copy go mod files
-COPY go.mod go.sum* ./
+# Copy go mod files first
+COPY services/validation/go.mod services/validation/go.sum* ./
+
+# Copy shared logger to match replace directive path (../../shared/logger from /app = /shared/logger)
+COPY shared/logger /shared/logger
 
 # Download dependencies
 RUN go mod download
 
 # Copy source code
-COPY . .
+COPY services/validation .
 
 # Build binary
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o validation .

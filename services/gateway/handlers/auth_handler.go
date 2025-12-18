@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/testpilot-ai/gateway/auth"
+	"github.com/testpilot-ai/shared/logger"
 )
 
 // AuthHandler handles authentication requests
@@ -37,15 +38,25 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	var userID uuid.UUID
 	var passwordHash, role string
 
+	requestID, _ := c.Get("request_id")
+	requestIDStr, _ := requestID.(string)
+
 	query := "SELECT id, password_hash, role FROM users WHERE username = $1"
 	err := h.db.QueryRow(context.Background(), query, req.Username).Scan(&userID, &passwordHash, &role)
 	if err != nil {
+		logger.WithRequestID(requestIDStr).Debug().
+			Str("username", req.Username).
+			Msg("Login failed: user not found")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
 
 	// Check password
 	if !auth.CheckPasswordHash(req.Password, passwordHash) {
+		logger.WithRequestID(requestIDStr).Debug().
+			Str("username", req.Username).
+			Str("user_id", userID.String()).
+			Msg("Login failed: invalid password")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials"})
 		return
 	}
@@ -53,9 +64,19 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	// Generate token
 	token, err := auth.GenerateToken(userID, role)
 	if err != nil {
+		logger.WithRequestID(requestIDStr).Err(err).
+			Str("username", req.Username).
+			Str("user_id", userID.String()).
+			Msg("Failed to generate token")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate token"})
 		return
 	}
+
+	logger.WithRequestID(requestIDStr).Info().
+		Str("username", req.Username).
+		Str("user_id", userID.String()).
+		Str("role", role).
+		Msg("User logged in successfully")
 
 	c.JSON(http.StatusOK, gin.H{
 		"token": token,
@@ -99,15 +120,33 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		VALUES ($1, $2, $3, $4, $5, $6)
 	`
 
+	requestID, _ := c.Get("request_id")
+	requestIDStr, _ := requestID.(string)
+
 	now := time.Now()
 	_, err = h.db.Exec(context.Background(), query, userID, req.Username, passwordHash, req.Role, now, now)
 	if err != nil {
+		logger.WithRequestID(requestIDStr).Debug().
+			Str("username", req.Username).
+			Msg("Registration failed: username already exists")
 		c.JSON(http.StatusConflict, gin.H{"error": "Username already exists"})
 		return
 	}
 
 	// Generate token
-	token, _ := auth.GenerateToken(userID, req.Role)
+	token, err := auth.GenerateToken(userID, req.Role)
+	if err != nil {
+		logger.WithRequestID(requestIDStr).Err(err).
+			Str("username", req.Username).
+			Str("user_id", userID.String()).
+			Msg("Failed to generate token after registration")
+	}
+
+	logger.WithRequestID(requestIDStr).Info().
+		Str("username", req.Username).
+		Str("user_id", userID.String()).
+		Str("role", req.Role).
+		Msg("User registered successfully")
 
 	c.JSON(http.StatusCreated, gin.H{
 		"token": token,

@@ -7,7 +7,9 @@ import (
 
 // SetupRouter configures the Gin router
 func SetupRouter(handler *handlers.QueryHandler) *gin.Engine {
-	router := gin.Default()
+	// Use gin.New() to avoid default logger noise
+	router := gin.New()
+	router.Use(gin.Recovery())
 
 	// Health check
 	router.GET("/health", handler.HealthCheck)

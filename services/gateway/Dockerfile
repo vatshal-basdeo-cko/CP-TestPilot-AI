@@ -4,10 +4,17 @@ RUN apk add --no-cache git
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
+# Copy go mod files first
+COPY services/gateway/go.mod services/gateway/go.sum ./
+
+# Copy shared logger to match replace directive path (../../shared/logger from /app = /shared/logger)
+COPY shared/logger /shared/logger
+
+# Download dependencies
 RUN go mod download
 
-COPY . .
+# Copy source code
+COPY services/gateway .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 FROM alpine:latest

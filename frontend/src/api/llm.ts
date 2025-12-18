@@ -11,11 +11,12 @@ export const llmApi = {
   },
 
   construct: async (parseResult: ParseResult, apiConfig?: unknown): Promise<ConstructedRequest> => {
-    const response = await apiClient.post<ConstructedRequest>('/api/v1/construct', {
+    const response = await apiClient.post<{ api_call: ConstructedRequest; generated_data: Record<string, unknown> }>('/api/v1/construct', {
       parse_result: parseResult,
       api_config: apiConfig,
     });
-    return response.data;
+    // Backend returns { api_call: {...}, generated_data: {...} }, extract api_call
+    return response.data.api_call;
   },
 
   generateData: async (fieldName: string, fieldType: string, format?: string): Promise<unknown> => {
@@ -32,4 +33,3 @@ export const llmApi = {
     return response.data;
   },
 };
-

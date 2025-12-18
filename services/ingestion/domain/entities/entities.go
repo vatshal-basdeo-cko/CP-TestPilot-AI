@@ -33,15 +33,16 @@ type IngestionResult struct {
 
 // APIEndpoint represents a single API endpoint from the config
 type APIEndpoint struct {
-	Name           string                 `yaml:"name" json:"name"`
-	Path           string                 `yaml:"path" json:"path"`
-	Method         string                 `yaml:"method" json:"method"`
-	Description    string                 `yaml:"description" json:"description"`
-	Authentication *AuthConfig            `yaml:"authentication" json:"authentication,omitempty"`
-	Parameters     []Parameter            `yaml:"parameters" json:"parameters,omitempty"`
-	RequestSchema  map[string]interface{} `yaml:"request_schema" json:"request_schema,omitempty"`
-	ResponseSchema map[string]interface{} `yaml:"response_schema" json:"response_schema,omitempty"`
-	Examples       []Example              `yaml:"examples" json:"examples,omitempty"`
+	Name                string                   `yaml:"name" json:"name"`
+	Path                string                   `yaml:"path" json:"path"`
+	Method              string                   `yaml:"method" json:"method"`
+	Description         string                   `yaml:"description" json:"description"`
+	Authentication      *AuthConfig              `yaml:"authentication" json:"authentication,omitempty"`
+	Parameters          []Parameter              `yaml:"parameters" json:"parameters,omitempty"`
+	RequestSchema       map[string]interface{}   `yaml:"request_schema" json:"request_schema,omitempty"`
+	ResponseSchema      map[string]interface{}   `yaml:"response_schema" json:"response_schema,omitempty"`
+	ExpectedStatusCodes []map[string]interface{} `yaml:"expected_status_codes" json:"expected_status_codes,omitempty"`
+	Examples            []Example                `yaml:"examples" json:"examples,omitempty"`
 }
 
 // AuthConfig represents authentication configuration
@@ -55,10 +56,12 @@ type AuthConfig struct {
 type Parameter struct {
 	Name        string `yaml:"name" json:"name"`
 	Type        string `yaml:"type" json:"type"`
+	In          string `yaml:"in" json:"in,omitempty"`
 	Required    bool   `yaml:"required" json:"required"`
 	Description string `yaml:"description" json:"description,omitempty"`
 	Default     string `yaml:"default" json:"default,omitempty"`
 	Format      string `yaml:"format" json:"format,omitempty"`
+	Example     string `yaml:"example" json:"example,omitempty"`
 }
 
 // Example represents a request/response example
@@ -89,9 +92,9 @@ type PostmanCollection struct {
 
 // PostmanItem represents an item in a Postman collection
 type PostmanItem struct {
-	Name    string        `json:"name"`
+	Name    string          `json:"name"`
 	Request *PostmanRequest `json:"request,omitempty"`
-	Item    []PostmanItem `json:"item,omitempty"` // For folders
+	Item    []PostmanItem   `json:"item,omitempty"` // For folders
 }
 
 // PostmanRequest represents a Postman request
@@ -101,7 +104,7 @@ type PostmanRequest struct {
 		Key   string `json:"key"`
 		Value string `json:"value"`
 	} `json:"header"`
-	URL  PostmanURL  `json:"url"`
+	URL  PostmanURL   `json:"url"`
 	Body *PostmanBody `json:"body,omitempty"`
 }
 
@@ -121,4 +124,3 @@ type PostmanBody struct {
 	Mode string `json:"mode"`
 	Raw  string `json:"raw"`
 }
-

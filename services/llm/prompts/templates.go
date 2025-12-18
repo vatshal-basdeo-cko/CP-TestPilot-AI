@@ -1,6 +1,7 @@
 package prompts
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -46,8 +47,13 @@ Respond in this JSON format:
 }`, SystemPrompt, apiContext, naturalLanguage)
 }
 
-// ConstructRequestPrompt generates a prompt for constructing the API call
+// ConstructRequestPrompt generates a prompt for constructing the API call (legacy, without API context)
 func ConstructRequestPrompt(parseResult string, apiConfig string, generatedData map[string]interface{}) string {
+	return ConstructRequestPromptWithContext(parseResult, apiConfig, "", generatedData)
+}
+
+// ConstructRequestPromptWithContext generates a prompt for constructing the API call with API context
+func ConstructRequestPromptWithContext(parseResult string, apiConfig string, apiContext string, generatedData map[string]interface{}) string {
 	dataStr := ""
 	if len(generatedData) > 0 {
 		var pairs []string
@@ -55,6 +61,11 @@ func ConstructRequestPrompt(parseResult string, apiConfig string, generatedData 
 			pairs = append(pairs, fmt.Sprintf("  %s: %v", k, v))
 		}
 		dataStr = "\n## Generated Test Data\n" + strings.Join(pairs, "\n")
+	}
+
+	contextStr := ""
+	if apiContext != "" {
+		contextStr = "\n## Available API Context (use base_url from here)\n" + apiContext
 	}
 
 	return fmt.Sprintf(`%s
@@ -65,24 +76,27 @@ func ConstructRequestPrompt(parseResult string, apiConfig string, generatedData 
 ## API Configuration
 %s
 %s
+%s
 
 ## Task
 Construct the complete API request with:
-1. Full URL with path parameters replaced
-2. All required headers
-3. Query parameters if applicable
-4. Request body with all required fields
+1. **IMPORTANT**: Build the FULL URL by combining the base_url from the API context with the endpoint path
+   - Example: If base_url is "http://example.com/api" and path is "/users/{id}", the full URL should be "http://example.com/api/users/123"
+2. Replace ALL path parameters with actual values from the parameters (e.g., {payment_id} -> pay_xyz)
+3. All required headers including Content-Type
+4. Query parameters if applicable
+5. Request body with all required fields from the API schema
 
 Respond in this JSON format:
 {
     "method": "GET/POST/PUT/DELETE",
-    "url": "full URL with path params replaced",
+    "url": "FULL URL starting with http:// or https:// with all path params replaced",
     "path": "the endpoint path",
     "headers": {"header_name": "value"},
     "query_params": {"param": "value"},
     "body": {"field": "value"},
     "confidence": 0.0 to 1.0
-}`, SystemPrompt, parseResult, apiConfig, dataStr)
+}`, SystemPrompt, parseResult, apiConfig, contextStr, dataStr)
 }
 
 // ClarificationPrompt generates a prompt for requesting clarification
@@ -120,8 +134,72 @@ func BuildAPIContext(contexts []map[string]interface{}) string {
 		desc, _ := ctx["description"].(string)
 
 		part := fmt.Sprintf("### %s (v%s)\n%s", name, version, desc)
-		
-		if endpoints, ok := ctx["endpoints"].([]interface{}); ok {
+
+		// Try to get config - it can be a string (raw) or map (already parsed)
+		var config map[string]interface{}
+		if configStr, ok := ctx["config"].(string); ok && configStr != "" {
+			// Config is a JSON string - parse it
+			_ = json.Unmarshal([]byte(configStr), &config)
+		} else if configMap, ok := ctx["config"].(map[string]interface{}); ok {
+			// Config is already a map
+			config = configMap
+		}
+
+		if config != nil {
+			// Include base_url - CRITICAL for constructing full URLs
+			if baseURL, ok := config["base_url"].(string); ok && baseURL != "" {
+				part += fmt.Sprintf("\n\n**Base URL**: %s", baseURL)
+			}
+
+			// Include detailed endpoint information
+			if endpoints, ok := config["endpoints"].([]interface{}); ok {
+				part += "\n\n**Endpoints:**"
+				for _, ep := range endpoints {
+					if epMap, ok := ep.(map[string]interface{}); ok {
+						method, _ := epMap["method"].(string)
+						path, _ := epMap["path"].(string)
+						epDesc, _ := epMap["description"].(string)
+						part += fmt.Sprintf("\n- %s %s: %s", method, path, epDesc)
+
+						// Include parameters info
+						if params, ok := epMap["parameters"].([]interface{}); ok && len(params) > 0 {
+							part += "\n  Parameters:"
+							for _, p := range params {
+								if pMap, ok := p.(map[string]interface{}); ok {
+									pName, _ := pMap["name"].(string)
+									pIn, _ := pMap["in"].(string)
+									pRequired, _ := pMap["required"].(bool)
+									pExample, _ := pMap["example"].(string)
+									if pIn == "" {
+										pIn = "body"
+									}
+									reqStr := ""
+									if pRequired {
+										reqStr = " (required)"
+									}
+									if pExample != "" {
+										part += fmt.Sprintf("\n    - %s [%s]%s example: %s", pName, pIn, reqStr, pExample)
+									} else {
+										part += fmt.Sprintf("\n    - %s [%s]%s", pName, pIn, reqStr)
+									}
+								}
+							}
+						}
+
+						// Include example request if available
+						if examples, ok := epMap["examples"].([]interface{}); ok && len(examples) > 0 {
+							if ex, ok := examples[0].(map[string]interface{}); ok {
+								if exReq, ok := ex["request"].(map[string]interface{}); ok {
+									exJSON, _ := json.MarshalIndent(exReq, "    ", "  ")
+									part += fmt.Sprintf("\n  Example request body:\n    %s", string(exJSON))
+								}
+							}
+						}
+					}
+				}
+			}
+		} else if endpoints, ok := ctx["endpoints"].([]interface{}); ok {
+			// Fallback to old format if no config available
 			part += "\n\nEndpoints:"
 			for _, ep := range endpoints {
 				if epMap, ok := ep.(map[string]interface{}); ok {
@@ -138,4 +216,3 @@ func BuildAPIContext(contexts []map[string]interface{}) string {
 
 	return strings.Join(parts, "\n\n---\n\n")
 }
-
