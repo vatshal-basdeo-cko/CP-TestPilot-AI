@@ -40,8 +40,9 @@ func main() {
 	healthHandler := handlers.NewHealthHandler()
 	serviceProxy := proxy.NewServiceProxy()
 
-	// Setup router
-	router := gin.Default()
+	// Setup router (use gin.New() to avoid default logger noise)
+	router := gin.New()
+	router.Use(gin.Recovery())
 
 	// Apply global middleware
 	router.Use(middleware.CORSMiddleware())

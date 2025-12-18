@@ -7,14 +7,17 @@ RUN apk add --no-cache git
 # Set working directory
 WORKDIR /app
 
-# Copy go mod files
-COPY go.mod go.sum ./
+# Copy go mod files first
+COPY services/execution/go.mod services/execution/go.sum ./
+
+# Copy shared logger to match replace directive path (../../shared/logger from /app = /shared/logger)
+COPY shared/logger /shared/logger
 
 # Download dependencies
 RUN go mod download
 
 # Copy source code
-COPY . .
+COPY services/execution .
 
 # Build the application
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .

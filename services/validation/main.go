@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -51,8 +50,9 @@ func main() {
 	// Initialize handlers
 	validationHandler := handlers.NewValidationHandler(schemaValidator, postgresRepo)
 
-	// Setup router
-	router := gin.Default()
+	// Setup router (use gin.New() to avoid default logger noise)
+	router := gin.New()
+	router.Use(gin.Recovery())
 
 	// Health check
 	router.GET("/health", validationHandler.Health)

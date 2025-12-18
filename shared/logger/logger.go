@@ -19,7 +19,7 @@ var (
 // Init initializes the global logger with the given service name
 func Init(name string) {
 	serviceName = name
-	
+
 	// Set log level from environment variable
 	logLevel := strings.ToUpper(os.Getenv("LOG_LEVEL"))
 	if logLevel == "" {
@@ -64,15 +64,16 @@ func Logger() *zerolog.Logger {
 }
 
 // WithContext returns a logger with context fields (request ID, etc.)
-func WithContext(ctx context.Context) zerolog.Logger {
+func WithContext(ctx context.Context) *zerolog.Logger {
 	log := globalLogger.With()
-	
+
 	// Extract request ID from context if available
 	if requestID, ok := ctx.Value("request_id").(string); ok && requestID != "" {
 		log = log.Str("request_id", requestID)
 	}
-	
-	return log.Logger()
+
+	l := log.Logger()
+	return &l
 }
 
 // Debug logs a debug message
@@ -121,8 +122,9 @@ func Err(err error) *zerolog.Event {
 }
 
 // WithRequestID creates a logger with a request ID
-func WithRequestID(requestID string) zerolog.Logger {
-	return globalLogger.With().Str("request_id", requestID).Logger()
+func WithRequestID(requestID string) *zerolog.Logger {
+	log := globalLogger.With().Str("request_id", requestID).Logger()
+	return &log
 }
 
 // WithFields creates a logger with additional fields
@@ -133,4 +135,3 @@ func WithFields(fields map[string]interface{}) zerolog.Logger {
 	}
 	return log.Logger()
 }
-

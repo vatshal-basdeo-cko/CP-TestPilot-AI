@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -53,7 +52,7 @@ func main() {
 
 	// Ensure Qdrant collection exists (768 dimensions for Gemini embeddings)
 	if err := qdrantAdapter.EnsureCollection(768); err != nil {
-		logger.Warn().Err(err).Msg("Failed to ensure Qdrant collection")
+		logger.Err(err).Msg("Failed to ensure Qdrant collection")
 	}
 
 	if cfg.GeminiAPIKey != "" {
@@ -71,8 +70,9 @@ func main() {
 		postgresRepo,
 	)
 
-	// Setup router
-	router := gin.Default()
+	// Setup router (use gin.New() to avoid default logger noise)
+	router := gin.New()
+	router.Use(gin.Recovery())
 
 	// Health check
 	router.GET("/health", ingestionHandler.Health)

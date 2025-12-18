@@ -1,197 +1,263 @@
 name: "Mastercard PTC Authorisation"
 version: "1.0.0"
 description: "Process Mastercard payment authorization transactions through the Payment Test Center (PTC) API"
-base_url: "${ENV_BASE_URL}"  # Replaced at runtime from environment config
+base_url: "http://cp-ptc.qa.internal/mastercard"
 
 endpoints:
   - name: "authorize"
-    path: "/api/v1/authorize"
+    path: "/authorizations/{payment_id}/paytocard"
     method: "POST"
-    description: "Authorize a payment transaction for a specified amount"
-    authentication:
-      type: "api_key"
-      header: "X-API-Key"
-      description: "API key authentication required in header"
+    description: "Authorize a payment transaction"
     
     parameters:
-      - name: "amount"
-        type: "number"
-        required: true
-        description: "Transaction amount in decimal format"
-        example: 200.00
-      
-      - name: "currency"
-        type: "string"
-        required: false
-        default: "USD"
-        description: "Three-letter ISO currency code"
-        example: "USD"
-        enum: ["USD", "EUR", "GBP"]
-      
-      - name: "card_number"
+      - name: "payment_id"
+        in: "path"
         type: "string"
         required: true
-        format: "card"
-        description: "16-digit card number"
-        example: "5555555555554444"
-      
-      - name: "card_expiry"
-        type: "string"
-        required: true
-        format: "MM/YY"
-        description: "Card expiry date"
-        example: "12/25"
-      
-      - name: "cvv"
-        type: "string"
-        required: true
-        description: "3 or 4 digit CVV code"
-        example: "123"
-      
-      - name: "merchant_id"
-        type: "string"
-        required: false
-        description: "Merchant identifier for the transaction"
-        example: "MERCH_001"
+        description: "Unique payment identifier"
+        example: "pay_kgaohkfk72ketfpxkf55gpytwu"
     
     request_schema:
       type: "object"
-      required: ["amount", "card_number", "card_expiry", "cvv"]
+      required: ["amount", "currency", "service_type", "entity_id", "sequence_number", "sender", "recipient", "card"]
       properties:
+        service_type:
+          type: "string"
+          example: "mastercard_iso"
+          enum: ["mastercard_iso", "mastercard_send_p2p", "mastercard_send_disbursement"]
+          description: "Type of service transaction"
+        action_id:
+          type: "string"
+          example: "act_srybfiwd2tse5lnzaypdlomcgy"
+        transaction_id:
+          type: "string"
+          format: "uuid"
+          example: "94602700-a0f4-4c00-b437-446790fd330c"
+        transaction_purpose:
+          type: "integer"
+          example: 11
+        entity_id:
+          type: "string"
+          example: "ent_yxjejosd7auuvm6w56i4fljye4"
+        processing_key:
+          type: "string"
         amount:
-          type: "number"
-          minimum: 0.01
-          maximum: 999999.99
-          description: "Transaction amount"
+          type: "integer"
+          description: "Transaction amount (in minor units)"
+          example: 1234
+        merchant_category_code:
+          type: "string"
+          pattern: "^[0-9]{4}$"
+          example: "6536"
         currency:
           type: "string"
-          pattern: "^[A-Z]{3}$"
-          default: "USD"
-        card_number:
+          pattern: "^[a-zA-Z]{3}$"
+          description: "Three-letter ISO currency code"
+          example: "USD"
+        fund_transfer_type:
           type: "string"
-          pattern: "^[0-9]{16}$"
-          description: "16-digit card number"
-        card_expiry:
+          example: "C55"
+        card_acceptor_name_location:
           type: "string"
-          pattern: "^(0[1-9]|1[0-2])/[0-9]{2}$"
-          description: "MM/YY format"
-        cvv:
+          example: "Revolut* - 2979        GBR           LTU"
+        card_acceptor_country_code:
           type: "string"
-          pattern: "^[0-9]{3,4}$"
-        merchant_id:
+          example: "GBR"
+        card_acceptor_postal_code:
           type: "string"
-          maxLength: 50
-        reference:
+          example: "36006"
+        card_acceptor_street_address:
           type: "string"
-          maxLength: 100
-          description: "Optional transaction reference"
-    
+          example: "string"
+        card_acceptor_address_line1:
+          type: "string"
+          example: "Somewhere Street"
+        card_acceptor_address_line2:
+          type: "string"
+          example: "Somewhere Street"
+        card_acceptor_city:
+          type: "string"
+          example: "City"
+        card_acceptor_state:
+          type: "string"
+          example: "AL"
+        cko_vault_id:
+          type: "string"
+          example: "c951b3f1-3011-4045-bb6c-e432a9e5de3f"
+        card:
+          type: "object"
+          properties:
+            card_number:
+              type: "string"
+              example: "5302318144933769"
+            expiry_month:
+              type: "integer"
+              example: 8
+            expiry_year:
+              type: "integer"
+              example: 2027
+        recipient:
+          type: "object"
+          properties:
+            first_name: { type: "string" }
+            last_name: { type: "string" }
+            account_number: { type: "string" }
+            address: { type: "string" }
+            city: { type: "string" }
+            country: { type: "string" }
+        sender:
+          type: "object"
+          properties:
+            first_name: { type: "string" }
+            last_name: { type: "string" }
+            account_number: { type: "string" }
+            address: { type: "string" }
+            city: { type: "string" }
+            country: { type: "string" }
+        merchant_acquirer_configuration:
+          type: "object"
+          properties:
+            processing_profile:
+              type: "object"
+            acquirer:
+              type: "object"
+            sequence_number: { type: "integer" }
+
     response_schema:
       type: "object"
       properties:
-        transaction_id:
-          type: "string"
-          description: "Unique transaction identifier"
-        status:
-          type: "string"
-          enum: ["approved", "declined", "pending", "error"]
-        authorization_code:
-          type: "string"
-          description: "Authorization code if approved"
-        amount:
-          type: "number"
-          description: "Authorized amount"
-        currency:
-          type: "string"
-        timestamp:
-          type: "string"
-          format: "date-time"
-        decline_reason:
-          type: "string"
-          description: "Reason if declined"
+        response_code:
+            type: "string"
+        response_message:
+            type: "string"
     
     expected_status_codes:
-      - code: 200
-        description: "Authorization successful"
-      - code: 400
-        description: "Invalid request parameters"
-      - code: 401
-        description: "Authentication failed"
-      - code: 402
-        description: "Payment declined"
+      - code: 201
+        description: "Created - Authorization successful"
+      - code: 202
+        description: "Accepted - Processing"
+      - code: 422
+        description: "Unprocessable Entity - Validation Error"
       - code: 500
-        description: "Server error"
-    
+        description: "Server Error"
+
     examples:
-      - name: "Successful authorization for $200"
+      - name: "Mastercard ISO Authorization"
         request:
-          amount: 200.00
+          service_type: "mastercard_iso"
+          action_id: "act_srybfiwd2tse5lnzaypdlomcgy"
+          transaction_id: "94602700-a0f4-4c00-b437-446790fd330c"
+          transaction_purpose: 11
+          entity_id: "ent_yxjejosd7auuvm6w56i4fljye4"
+          processing_key: "pp_4qwg6eib2udu5eteo2uxaiuxom"
+          amount: 1234
+          merchant_category_code: "6536"
           currency: "USD"
-          card_number: "5555555555554444"
-          card_expiry: "12/25"
-          cvv: "123"
-          reference: "TEST-AUTH-001"
-        response:
-          transaction_id: "txn_1234567890"
-          status: "approved"
-          authorization_code: "AUTH789"
-          amount: 200.00
-          currency: "USD"
-          timestamp: "2024-01-15T10:30:00Z"
-      
-      - name: "Authorization with merchant ID"
+          fund_transfer_type: "C55"
+          card_acceptor_name_location: "Revolut* - 2979        GBR           LTU"
+          card_acceptor_country_code: "GBR"
+          card_acceptor_postal_code: "36006"
+          card_acceptor_street_address: "string"
+          card_acceptor_address_line1: "Somewhere Street"
+          card_acceptor_address_line2: "Somewhere Street"
+          card_acceptor_city: "City"
+          card_acceptor_state: "AL"
+          cko_vault_id: "c951b3f1-3011-4045-bb6c-e432a9e5de3f"
+          card:
+             card_number: "5302318144933769"
+             expiry_month: 8
+             expiry_year: 2027
+          recipient:
+            first_name: "John"
+            last_name: "younis"
+            # ... (truncated for brevity, fields are consistent)
+          sender:
+            first_name: "Adrise"
+            last_name: "lastname"
+            # ... (truncated for brevity)
+          merchant_acquirer_configuration:
+             processing_profile: { "id": "pp_4qwg6eib2udu5eteo2uxaiuxom" }
+             acquirer: { "acquirer_key": "cko_mc_gb" }
+             sequence_number: 1000000000
+    
+      - name: "Mastercard Send P2P Authorization"
         request:
-          amount: 500.00
-          currency: "EUR"
-          card_number: "4111111111111111"
-          card_expiry: "06/26"
-          cvv: "456"
-          merchant_id: "MERCH_001"
-        response:
-          transaction_id: "txn_0987654321"
-          status: "approved"
-          authorization_code: "AUTH456"
-          amount: 500.00
-          currency: "EUR"
-          timestamp: "2024-01-15T10:31:00Z"
-      
-      - name: "Declined transaction - insufficient funds"
+          service_type: "mastercard_send_p2p"
+          action_id: "act_p2p_example_123"
+          transaction_id: "uuid-p2p-001"
+          transaction_purpose: 11
+          entity_id: "ent_yxjejosd7auuvm6w56i4fljye4"
+          processing_key: "pp_4qwg6eib2udu5eteo2uxaiuxom"
+          amount: 5000
+          merchant_category_code: "6536"
+          currency: "USD"
+          fund_transfer_type: "AA" # Example for P2P
+          card_acceptor_name_location: "P2P Transfer"
+          card_acceptor_country_code: "GBR"
+          card_acceptor_postal_code: "36006"
+          card_acceptor_street_address: "P2P Street"
+          card_acceptor_city: "London"
+          card_acceptor_state: "LND"
+          cko_vault_id: "vault_id_123"
+          card:
+             card_number: "5302318144933769"
+             expiry_month: 12
+             expiry_year: 2028
+          recipient:
+             first_name: "Alice"
+             last_name: "Receiver"
+             # ...
+          sender:
+             first_name: "Bob"
+             last_name: "Sender"
+             # ...
+          merchant_acquirer_configuration:
+             processing_profile: { "id": "pp_4qwg6eib2udu5eteo2uxaiuxom" }
+             acquirer: { "acquirer_key": "cko_mc_gb" }
+             sequence_number: 1000000001
+
+      - name: "Mastercard Send Disbursement Authorization"
         request:
-          amount: 10000.00
+          service_type: "mastercard_send_disbursement"
+          action_id: "act_disburse_example_456"
+          transaction_id: "uuid-disburse-002"
+          transaction_purpose: 11
+          entity_id: "ent_yxjejosd7auuvm6w56i4fljye4"
+          processing_key: "pp_4qwg6eib2udu5eteo2uxaiuxom"
+          amount: 25000
+          merchant_category_code: "6536"
           currency: "USD"
-          card_number: "5555555555554444"
-          card_expiry: "12/25"
-          cvv: "123"
-        response:
-          transaction_id: "txn_1111222233"
-          status: "declined"
-          amount: 10000.00
-          currency: "USD"
-          decline_reason: "Insufficient funds"
-          timestamp: "2024-01-15T10:32:00Z"
+          fund_transfer_type: "BB" # Example for Disbursement
+          card_acceptor_name_location: "Insurance Claim Payout"
+          card_acceptor_country_code: "USA"
+          card_acceptor_postal_code: "10001"
+          card_acceptor_street_address: "Insurance Plaza"
+          card_acceptor_city: "New York"
+          card_acceptor_state: "NY"
+          cko_vault_id: "vault_id_456"
+          card:
+             card_number: "5302318144933769"
+             expiry_month: 6
+             expiry_year: 2026
+          recipient:
+             first_name: "Charlie"
+             last_name: "Claimant"
+             # ...
+          sender:
+             first_name: "Global Insurance Co"
+             last_name: "Corp"
+             # ...
+          merchant_acquirer_configuration:
+             processing_profile: { "id": "pp_4qwg6eib2udu5eteo2uxaiuxom" }
+             acquirer: { "acquirer_key": "cko_mc_gb" }
+             sequence_number: 1000000002
 
 test_scenarios:
-  - scenario: "Small transaction"
-    natural_language: "Test authorization with amount 50"
-    expected_amount: 50.00
+  - scenario: "Standard Authorization"
+    natural_language: "Authorize payment for payment_id pay_xyz"
+    expected_status: 201
   
-  - scenario: "Large transaction"
-    natural_language: "Authorize payment of 5000 dollars"
-    expected_amount: 5000.00
-  
-  - scenario: "Euro transaction"
-    natural_language: "Test Mastercard authorization for 200 EUR"
-    expected_amount: 200.00
-    expected_currency: "EUR"
-
 metadata:
   api_provider: "Mastercard"
   environment: "test"
-  rate_limit: "100 requests per minute"
-  documentation_url: "https://developer.mastercard.com/ptc/documentation"
-  support_contact: "api-support@mastercard.com"
-  version_history:
-    - version: "1.0.0"
-      date: "2024-01-15"
-      changes: "Initial API specification"
-
+  documentation_url: "https://github.com/cko-card-processing/mastercard-ptc-api"

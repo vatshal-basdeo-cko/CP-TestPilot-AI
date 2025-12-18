@@ -43,8 +43,8 @@ services:
   # Ingestion Service (Go)
   ingestion:
     build:
-      context: ./services/ingestion
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/ingestion/Dockerfile
     container_name: testpilot-ingestion
     environment:
       - POSTGRES_HOST=postgres
@@ -78,8 +78,8 @@ services:
   # LLM Service (Go)
   llm:
     build:
-      context: ./services/llm
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/llm/Dockerfile
     container_name: testpilot-llm
     environment:
       - POSTGRES_HOST=postgres
@@ -113,8 +113,8 @@ services:
   # Execution Service (Go)
   execution:
     build:
-      context: ./services/execution
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/execution/Dockerfile
     container_name: testpilot-execution
     environment:
       - DATABASE_URL=postgres://${POSTGRES_USER:-testpilot}:${POSTGRES_PASSWORD:-changeme_in_production}@postgres:5432/${POSTGRES_DB:-testpilot}?sslmode=disable
@@ -140,8 +140,8 @@ services:
   # Validation Service (Go)
   validation:
     build:
-      context: ./services/validation
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/validation/Dockerfile
     container_name: testpilot-validation
     environment:
       - POSTGRES_HOST=postgres
@@ -167,8 +167,8 @@ services:
   # Query Service (Go)
   query:
     build:
-      context: ./services/query
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/query/Dockerfile
     container_name: testpilot-query
     environment:
       - DATABASE_URL=postgres://${POSTGRES_USER:-testpilot}:${POSTGRES_PASSWORD:-changeme_in_production}@postgres:5432/${POSTGRES_DB:-testpilot}?sslmode=disable
@@ -194,8 +194,8 @@ services:
   # API Gateway (Go)
   gateway:
     build:
-      context: ./services/gateway
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/gateway/Dockerfile
     container_name: testpilot-gateway
     environment:
       - DATABASE_URL=postgres://${POSTGRES_USER:-testpilot}:${POSTGRES_PASSWORD:-changeme_in_production}@postgres:5432/${POSTGRES_DB:-testpilot}?sslmode=disable

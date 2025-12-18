@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -52,10 +52,10 @@ func main() {
 		cfg.DefaultProvider,
 	)
 
-	logger.Info().
-		Strs("providers", providerFactory.ListAvailableProviders()).
-		Str("default_provider", providerFactory.GetDefaultProviderName()).
-		Msg("LLM providers initialized")
+	providers := providerFactory.ListAvailableProviders()
+	logger.Infof("LLM providers initialized: [%s], default: %s", 
+		strings.Join(providers, ", "), 
+		providerFactory.GetDefaultProviderName())
 
 	// Initialize Gemini embedding adapter for RAG
 	geminiEmbedding := adapters.NewGeminiEmbeddingAdapter(cfg.GeminiAPIKey)
@@ -79,8 +79,9 @@ func main() {
 		postgresRepo,
 	)
 
-	// Setup router
-	router := gin.Default()
+	// Setup router (use gin.New() to avoid default logger noise)
+	router := gin.New()
+	router.Use(gin.Recovery())
 
 	// Health check
 	router.GET("/health", llmHandler.Health)
