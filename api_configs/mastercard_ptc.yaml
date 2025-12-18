@@ -41,6 +41,7 @@ endpoints:
           example: "ent_yxjejosd7auuvm6w56i4fljye4"
         processing_key:
           type: "string"
+          example: "pp_4qwg6eib2udu5eteo2uxaiuxom"
         amount:
           type: "integer"
           description: "Transaction amount (in minor units)"
@@ -84,6 +85,10 @@ endpoints:
         cko_vault_id:
           type: "string"
           example: "c951b3f1-3011-4045-bb6c-e432a9e5de3f"
+        sequence_number:
+          type: "integer"
+          description: "Unique sequence number for the transaction"
+          example: 1000000000
         card:
           type: "object"
           properties:
@@ -98,30 +103,371 @@ endpoints:
               example: 2027
         recipient:
           type: "object"
+          description: "Recipient/beneficiary details for the payment"
           properties:
-            first_name: { type: "string" }
-            last_name: { type: "string" }
-            account_number: { type: "string" }
-            address: { type: "string" }
-            city: { type: "string" }
-            country: { type: "string" }
+            first_name:
+              type: "string"
+              example: "John"
+            middle_name:
+              type: "string"
+              example: "T"
+            last_name:
+              type: "string"
+              example: "younis"
+            address:
+              type: "string"
+              example: "Somewhere Street"
+            address_line1:
+              type: "string"
+              example: "Somewhere Street"
+            address_line2:
+              type: "string"
+              example: "Somewhere Street"
+            city:
+              type: "string"
+              example: "New York"
+            state:
+              type: "string"
+              example: "NYY"
+            country:
+              type: "string"
+              example: "USA"
+            postal_code:
+              type: "string"
+              example: "36006"
+            dob:
+              type: "string"
+              description: "Date of birth in MMDDYYYY format"
+              example: "12311991"
+            phone_number:
+              type: "string"
+              example: "1484521973"
+            account_number:
+              type: "string"
+              example: "5102589999999913"
+            identification_type:
+              type: "integer"
+              description: "Type of identification document (1=Passport, 2=National ID, etc.)"
+              example: 1
+            identification_number:
+              type: "string"
+              example: "string"
+            identification_country_code:
+              type: "string"
+              example: "gbr"
+            identification_expiry_date:
+              type: "string"
+              description: "ID expiry date in MMDDYYYY format"
+              example: "12062021"
+            nationality:
+              type: "string"
+              example: "gbr"
+            country_of_birth:
+              type: "string"
+              example: "gbr"
         sender:
           type: "object"
+          description: "Sender/originator details for the payment"
           properties:
-            first_name: { type: "string" }
-            last_name: { type: "string" }
-            account_number: { type: "string" }
-            address: { type: "string" }
-            city: { type: "string" }
-            country: { type: "string" }
+            account_type:
+              type: "integer"
+              description: "Type of account (7=Other)"
+              example: 7
+            account_number:
+              type: "string"
+              example: "123456"
+            address:
+              type: "string"
+              example: "Somewhere Street"
+            address_line1:
+              type: "string"
+              example: "Somewhere Street"
+            address_line2:
+              type: "string"
+              example: "Somewhere Street"
+            city:
+              type: "string"
+              example: "Moody"
+            state:
+              type: "string"
+              example: "AL"
+            country:
+              type: "string"
+              example: "USA"
+            postal_code:
+              type: "string"
+              example: "35004"
+            dob:
+              type: "string"
+              description: "Date of birth in MMDDYYYY format"
+              example: "12311991"
+            phone_number:
+              type: "string"
+              example: "012123055332"
+            first_name:
+              type: "string"
+              example: "Adrise"
+            middle_name:
+              type: "string"
+              example: "T"
+            last_name:
+              type: "string"
+              example: "lastnamelastnamelastnamelastname"
+            source_of_funds:
+              type: "integer"
+              description: "Source of funds indicator (1=Credit, 2=Debit, etc.)"
+              example: 1
+            identification_type:
+              type: "integer"
+              description: "Type of identification document"
+              example: 1
+            identification_number:
+              type: "string"
+              example: "string"
+            identification_country_code:
+              type: "string"
+              example: "gbr"
+            identification_expiry_date:
+              type: "string"
+              description: "ID expiry date in MMDDYYYY format"
+              example: "12062021"
+            nationality:
+              type: "string"
+              example: "gbr"
+            country_of_birth:
+              type: "string"
+              example: "gbr"
         merchant_acquirer_configuration:
           type: "object"
+          description: "Merchant and acquirer configuration for processing"
           properties:
             processing_profile:
               type: "object"
+              description: "Processing profile configuration"
+              properties:
+                processing_profile_name:
+                  type: "string"
+                  example: "pp_eh953ug5he45oi"
+                id:
+                  type: "string"
+                  example: "pp_4qwg6eib2udu5eteo2uxaiuxom"
+                entity_id:
+                  type: "string"
+                  example: "ent_yxjejosd7auuvm6w56i4fljye4"
+                business_model:
+                  type: "string"
+                  enum: ["MoR", "PSP", "Gateway"]
+                  example: "MoR"
+                acquirer_key:
+                  type: "string"
+                  example: "cko_key"
+                business_settings:
+                  type: "array"
+                  items:
+                    type: "object"
+                    properties:
+                      merchant_category_code:
+                        type: "string"
+                        example: "6011"
+                      card_acceptor_identification_code:
+                        type: "string"
+                        example: "9784516784512"
+                acquiring_bin:
+                  type: "integer"
+                  example: 230143
+                auto_generate_card_acceptor_identification_code:
+                  type: "boolean"
+                  example: true
+                status:
+                  type: "string"
+                  enum: ["Active", "Inactive"]
+                  example: "Active"
+                schemes:
+                  type: "array"
+                  items:
+                    type: "string"
+                  example: ["mastercard"]
+                processing_type:
+                  type: "string"
+                  enum: ["payout", "payin"]
+                  example: "payout"
+                creation_date:
+                  type: "string"
+                  example: "06-01-2021T18:00:00"
+                updated_date:
+                  type: "string"
+                  example: "06-01-2021T18:00:00"
+                custom_settings:
+                  type: "object"
+                  properties:
+                    is_highrisk:
+                      type: "boolean"
+                      nullable: true
+                      example: null
             acquirer:
               type: "object"
-            sequence_number: { type: "integer" }
+              description: "Acquirer configuration"
+              properties:
+                acquirer_key:
+                  type: "string"
+                  example: "cko_mc_gb"
+                acquirer_name:
+                  type: "string"
+                  example: "cko-mc"
+                acquirer_region:
+                  type: "string"
+                  example: "GB"
+                acquirer_country_code:
+                  type: "string"
+                  example: "GBR"
+                acquirer_country:
+                  type: "object"
+                  properties:
+                    name:
+                      type: "string"
+                      example: "United Kingdom of Great Britain and Northern Ireland (the)"
+                    alpha2:
+                      type: "string"
+                      example: "GB"
+                    alpha3:
+                      type: "string"
+                      example: "GBR"
+                    numeric_code:
+                      type: "string"
+                      example: "826"
+                forwarding_institution_id:
+                  type: "string"
+                  example: "200481"
+                custom_settings:
+                  type: "object"
+                  properties:
+                    acquirer_bin:
+                      type: "array"
+                      items:
+                        type: "string"
+                      example: ["230143", "518489", "820760", "517614", "271676", "872991", "990877"]
+                    acquirer_name:
+                      type: "string"
+                      example: "Checkout MC"
+                    processor_name:
+                      type: "string"
+                      example: "Checkout Ltd."
+                    acquirer_bid_ica:
+                      type: "string"
+                      example: "14979"
+                    legal_acquirer_name:
+                      type: "string"
+                      example: "Checkout Ltd."
+                    force_refund_recurring:
+                      type: "boolean"
+                      example: false
+                    acquirer_bin_ica_mappings:
+                      type: "object"
+                      additionalProperties:
+                        type: "string"
+                      example:
+                        "230143": "014979"
+                        "271676": "014979"
+                        "517614": "014979"
+                        "518489": "014979"
+                        "820760": "014979"
+                        "872991": "035410"
+                        "990877": "035410"
+                    interbank_card_association:
+                      type: "string"
+                      example: "014979"
+                    enable_refund_authorization:
+                      type: "boolean"
+                      example: false
+                    partner_transaction_type_identifiers:
+                      type: "array"
+                      items:
+                        type: "string"
+                      example: []
+                processor_key:
+                  type: "string"
+                  example: "cko-mc"
+                processing_type_settings:
+                  type: "object"
+                  properties:
+                    payin:
+                      type: "object"
+                      properties:
+                        routing_key:
+                          type: "string"
+                          example: "cko_mc_eu_dual"
+                    payout:
+                      type: "object"
+                      properties:
+                        routing_key:
+                          type: "string"
+                          example: "cko_mc_eu_dual"
+                sca_exemptions:
+                  type: "object"
+                  description: "Strong Customer Authentication exemption settings"
+                  properties:
+                    transaction_risk_analysis:
+                      type: "object"
+                      properties:
+                        enabled:
+                          type: "boolean"
+                          example: true
+                        currency_settings:
+                          type: "object"
+                          additionalProperties:
+                            type: "object"
+                            properties:
+                              limit:
+                                type: "integer"
+                          example:
+                            GBP:
+                              limit: 220
+                    low_value:
+                      type: "object"
+                      properties:
+                        enabled:
+                          type: "boolean"
+                          example: true
+                        currency_settings:
+                          type: "object"
+                          additionalProperties:
+                            type: "object"
+                            properties:
+                              limit:
+                                type: "integer"
+                          example:
+                            GBP:
+                              limit: 25
+                    secure_corporate_payment:
+                      type: "object"
+                      properties:
+                        enabled:
+                          type: "boolean"
+                          example: true
+                    3ds_outage:
+                      type: "object"
+                      properties:
+                        enabled:
+                          type: "boolean"
+                          example: true
+                    sca_delegation:
+                      type: "object"
+                      properties:
+                        enabled:
+                          type: "boolean"
+                          example: true
+                is_third_party_acquirer:
+                  type: "boolean"
+                  example: false
+                is_network_token_supported:
+                  type: "boolean"
+                  example: true
+                creation_date:
+                  type: "string"
+                  example: "2021-10-11T06:32:31.572264"
+                updated_date:
+                  type: "string"
+                  example: "2025-05-22T06:11:14.284185"
 
     response_schema:
       type: "object"
@@ -142,7 +488,8 @@ endpoints:
         description: "Server Error"
 
     examples:
-      - name: "Mastercard ISO Authorization"
+      - name: "Complete Mastercard ISO Authorization"
+        description: "Full payload for Mastercard ISO authorization test matching production curl"
         request:
           service_type: "mastercard_iso"
           action_id: "act_srybfiwd2tse5lnzaypdlomcgy"
@@ -163,24 +510,139 @@ endpoints:
           card_acceptor_city: "City"
           card_acceptor_state: "AL"
           cko_vault_id: "c951b3f1-3011-4045-bb6c-e432a9e5de3f"
+          sequence_number: 1000000000
           card:
-             card_number: "5302318144933769"
-             expiry_month: 8
-             expiry_year: 2027
+            card_number: "5302318144933769"
+            expiry_month: 8
+            expiry_year: 2027
           recipient:
             first_name: "John"
+            middle_name: "T"
             last_name: "younis"
-            # ... (truncated for brevity, fields are consistent)
+            address: "Somewhere Street"
+            address_line1: "Somewhere Street"
+            address_line2: "Somewhere Street"
+            city: "New York"
+            state: "NYY"
+            country: "USA"
+            postal_code: "36006"
+            dob: "12311991"
+            phone_number: "1484521973"
+            account_number: "5102589999999913"
+            identification_type: 1
+            identification_number: "string"
+            identification_country_code: "gbr"
+            identification_expiry_date: "12062021"
+            nationality: "gbr"
+            country_of_birth: "gbr"
           sender:
+            account_type: 7
+            account_number: "123456"
+            address: "Somewhere Street"
+            address_line1: "Somewhere Street"
+            address_line2: "Somewhere Street"
+            city: "Moody"
+            state: "AL"
+            country: "USA"
+            postal_code: "35004"
+            dob: "12311991"
+            phone_number: "012123055332"
             first_name: "Adrise"
-            last_name: "lastname"
-            # ... (truncated for brevity)
+            middle_name: "T"
+            last_name: "lastnamelastnamelastnamelastname"
+            source_of_funds: 1
+            identification_type: 1
+            identification_number: "string"
+            identification_country_code: "gbr"
+            identification_expiry_date: "12062021"
+            nationality: "gbr"
+            country_of_birth: "gbr"
           merchant_acquirer_configuration:
-             processing_profile: { "id": "pp_4qwg6eib2udu5eteo2uxaiuxom" }
-             acquirer: { "acquirer_key": "cko_mc_gb" }
-             sequence_number: 1000000000
+            processing_profile:
+              processing_profile_name: "pp_eh953ug5he45oi"
+              id: "pp_4qwg6eib2udu5eteo2uxaiuxom"
+              entity_id: "ent_yxjejosd7auuvm6w56i4fljye4"
+              business_model: "MoR"
+              acquirer_key: "cko_key"
+              business_settings:
+                - merchant_category_code: "6011"
+                  card_acceptor_identification_code: "9784516784512"
+              acquiring_bin: 230143
+              auto_generate_card_acceptor_identification_code: true
+              status: "Active"
+              schemes:
+                - "mastercard"
+              processing_type: "payout"
+              creation_date: "06-01-2021T18:00:00"
+              updated_date: "06-01-2021T18:00:00"
+              custom_settings:
+                is_highrisk: null
+            acquirer:
+              acquirer_key: "cko_mc_gb"
+              acquirer_name: "cko-mc"
+              acquirer_region: "GB"
+              acquirer_country_code: "GBR"
+              acquirer_country:
+                name: "United Kingdom of Great Britain and Northern Ireland (the)"
+                alpha2: "GB"
+                alpha3: "GBR"
+                numeric_code: "826"
+              forwarding_institution_id: "200481"
+              custom_settings:
+                acquirer_bin:
+                  - "230143"
+                  - "518489"
+                  - "820760"
+                  - "517614"
+                  - "271676"
+                  - "872991"
+                  - "990877"
+                acquirer_name: "Checkout MC"
+                processor_name: "Checkout Ltd."
+                acquirer_bid_ica: "14979"
+                legal_acquirer_name: "Checkout Ltd."
+                force_refund_recurring: false
+                acquirer_bin_ica_mappings:
+                  "230143": "014979"
+                  "271676": "014979"
+                  "517614": "014979"
+                  "518489": "014979"
+                  "820760": "014979"
+                  "872991": "035410"
+                  "990877": "035410"
+                interbank_card_association: "014979"
+                enable_refund_authorization: false
+                partner_transaction_type_identifiers: []
+              processor_key: "cko-mc"
+              processing_type_settings:
+                payin:
+                  routing_key: "cko_mc_eu_dual"
+                payout:
+                  routing_key: "cko_mc_eu_dual"
+              sca_exemptions:
+                transaction_risk_analysis:
+                  enabled: true
+                  currency_settings:
+                    GBP:
+                      limit: 220
+                low_value:
+                  enabled: true
+                  currency_settings:
+                    GBP:
+                      limit: 25
+                secure_corporate_payment:
+                  enabled: true
+                3ds_outage:
+                  enabled: true
+                sca_delegation:
+                  enabled: true
+              is_third_party_acquirer: false
+              is_network_token_supported: true
+              creation_date: "2021-10-11T06:32:31.572264"
+              updated_date: "2025-05-22T06:11:14.284185"
     
       - name: "Mastercard Send P2P Authorization"
+        description: "P2P transfer example with complete payload"
         request:
           service_type: "mastercard_send_p2p"
           action_id: "act_p2p_example_123"
@@ -191,32 +653,137 @@ endpoints:
           amount: 5000
           merchant_category_code: "6536"
           currency: "USD"
-          fund_transfer_type: "AA" # Example for P2P
+          fund_transfer_type: "AA"
           card_acceptor_name_location: "P2P Transfer"
           card_acceptor_country_code: "GBR"
           card_acceptor_postal_code: "36006"
           card_acceptor_street_address: "P2P Street"
+          card_acceptor_address_line1: "P2P Street"
+          card_acceptor_address_line2: "Suite 100"
           card_acceptor_city: "London"
           card_acceptor_state: "LND"
           cko_vault_id: "vault_id_123"
+          sequence_number: 1000000001
           card:
-             card_number: "5302318144933769"
-             expiry_month: 12
-             expiry_year: 2028
+            card_number: "5302318144933769"
+            expiry_month: 12
+            expiry_year: 2028
           recipient:
-             first_name: "Alice"
-             last_name: "Receiver"
-             # ...
+            first_name: "Alice"
+            middle_name: "M"
+            last_name: "Receiver"
+            address: "123 Receive Lane"
+            address_line1: "123 Receive Lane"
+            address_line2: "Apt 4B"
+            city: "Manchester"
+            state: "MAN"
+            country: "GBR"
+            postal_code: "M1 1AA"
+            dob: "05151990"
+            phone_number: "4471234567890"
+            account_number: "5102589999999914"
+            identification_type: 1
+            identification_number: "AB123456"
+            identification_country_code: "gbr"
+            identification_expiry_date: "12312030"
+            nationality: "gbr"
+            country_of_birth: "gbr"
           sender:
-             first_name: "Bob"
-             last_name: "Sender"
-             # ...
+            account_type: 7
+            account_number: "654321"
+            address: "456 Sender Road"
+            address_line1: "456 Sender Road"
+            address_line2: "Floor 2"
+            city: "Birmingham"
+            state: "BIR"
+            country: "GBR"
+            postal_code: "B1 1BB"
+            dob: "03201985"
+            phone_number: "4479876543210"
+            first_name: "Bob"
+            middle_name: "J"
+            last_name: "Sender"
+            source_of_funds: 1
+            identification_type: 1
+            identification_number: "CD789012"
+            identification_country_code: "gbr"
+            identification_expiry_date: "06302029"
+            nationality: "gbr"
+            country_of_birth: "gbr"
           merchant_acquirer_configuration:
-             processing_profile: { "id": "pp_4qwg6eib2udu5eteo2uxaiuxom" }
-             acquirer: { "acquirer_key": "cko_mc_gb" }
-             sequence_number: 1000000001
+            processing_profile:
+              processing_profile_name: "pp_p2p_profile"
+              id: "pp_4qwg6eib2udu5eteo2uxaiuxom"
+              entity_id: "ent_yxjejosd7auuvm6w56i4fljye4"
+              business_model: "MoR"
+              acquirer_key: "cko_key"
+              business_settings:
+                - merchant_category_code: "6536"
+                  card_acceptor_identification_code: "9784516784513"
+              acquiring_bin: 230143
+              auto_generate_card_acceptor_identification_code: true
+              status: "Active"
+              schemes:
+                - "mastercard"
+              processing_type: "payout"
+              creation_date: "06-01-2021T18:00:00"
+              updated_date: "06-01-2021T18:00:00"
+              custom_settings:
+                is_highrisk: null
+            acquirer:
+              acquirer_key: "cko_mc_gb"
+              acquirer_name: "cko-mc"
+              acquirer_region: "GB"
+              acquirer_country_code: "GBR"
+              acquirer_country:
+                name: "United Kingdom of Great Britain and Northern Ireland (the)"
+                alpha2: "GB"
+                alpha3: "GBR"
+                numeric_code: "826"
+              forwarding_institution_id: "200481"
+              custom_settings:
+                acquirer_bin:
+                  - "230143"
+                acquirer_name: "Checkout MC"
+                processor_name: "Checkout Ltd."
+                acquirer_bid_ica: "14979"
+                legal_acquirer_name: "Checkout Ltd."
+                force_refund_recurring: false
+                acquirer_bin_ica_mappings:
+                  "230143": "014979"
+                interbank_card_association: "014979"
+                enable_refund_authorization: false
+                partner_transaction_type_identifiers: []
+              processor_key: "cko-mc"
+              processing_type_settings:
+                payin:
+                  routing_key: "cko_mc_eu_dual"
+                payout:
+                  routing_key: "cko_mc_eu_dual"
+              sca_exemptions:
+                transaction_risk_analysis:
+                  enabled: true
+                  currency_settings:
+                    GBP:
+                      limit: 220
+                low_value:
+                  enabled: true
+                  currency_settings:
+                    GBP:
+                      limit: 25
+                secure_corporate_payment:
+                  enabled: true
+                3ds_outage:
+                  enabled: true
+                sca_delegation:
+                  enabled: true
+              is_third_party_acquirer: false
+              is_network_token_supported: true
+              creation_date: "2021-10-11T06:32:31.572264"
+              updated_date: "2025-05-22T06:11:14.284185"
 
       - name: "Mastercard Send Disbursement Authorization"
+        description: "Disbursement/payout example with complete payload"
         request:
           service_type: "mastercard_send_disbursement"
           action_id: "act_disburse_example_456"
@@ -227,35 +794,176 @@ endpoints:
           amount: 25000
           merchant_category_code: "6536"
           currency: "USD"
-          fund_transfer_type: "BB" # Example for Disbursement
+          fund_transfer_type: "BB"
           card_acceptor_name_location: "Insurance Claim Payout"
           card_acceptor_country_code: "USA"
           card_acceptor_postal_code: "10001"
           card_acceptor_street_address: "Insurance Plaza"
+          card_acceptor_address_line1: "100 Insurance Plaza"
+          card_acceptor_address_line2: "Tower 1"
           card_acceptor_city: "New York"
           card_acceptor_state: "NY"
           cko_vault_id: "vault_id_456"
+          sequence_number: 1000000002
           card:
-             card_number: "5302318144933769"
-             expiry_month: 6
-             expiry_year: 2026
+            card_number: "5302318144933769"
+            expiry_month: 6
+            expiry_year: 2026
           recipient:
-             first_name: "Charlie"
-             last_name: "Claimant"
-             # ...
+            first_name: "Charlie"
+            middle_name: "R"
+            last_name: "Claimant"
+            address: "789 Claim Street"
+            address_line1: "789 Claim Street"
+            address_line2: "Unit 5C"
+            city: "New York"
+            state: "NY"
+            country: "USA"
+            postal_code: "10001"
+            dob: "07041980"
+            phone_number: "12125551234"
+            account_number: "5102589999999915"
+            identification_type: 2
+            identification_number: "NYS123456789"
+            identification_country_code: "usa"
+            identification_expiry_date: "12312028"
+            nationality: "usa"
+            country_of_birth: "usa"
           sender:
-             first_name: "Global Insurance Co"
-             last_name: "Corp"
-             # ...
+            account_type: 3
+            account_number: "INS-CORP-001"
+            address: "500 Corporate Drive"
+            address_line1: "500 Corporate Drive"
+            address_line2: "Floor 25"
+            city: "Hartford"
+            state: "CT"
+            country: "USA"
+            postal_code: "06101"
+            dob: "01011900"
+            phone_number: "18005551000"
+            first_name: "Global Insurance Co"
+            middle_name: ""
+            last_name: "Corp"
+            source_of_funds: 2
+            identification_type: 3
+            identification_number: "EIN-12-3456789"
+            identification_country_code: "usa"
+            identification_expiry_date: "12312099"
+            nationality: "usa"
+            country_of_birth: "usa"
           merchant_acquirer_configuration:
-             processing_profile: { "id": "pp_4qwg6eib2udu5eteo2uxaiuxom" }
-             acquirer: { "acquirer_key": "cko_mc_gb" }
-             sequence_number: 1000000002
+            processing_profile:
+              processing_profile_name: "pp_disbursement_profile"
+              id: "pp_4qwg6eib2udu5eteo2uxaiuxom"
+              entity_id: "ent_yxjejosd7auuvm6w56i4fljye4"
+              business_model: "MoR"
+              acquirer_key: "cko_key"
+              business_settings:
+                - merchant_category_code: "6300"
+                  card_acceptor_identification_code: "9784516784514"
+              acquiring_bin: 230143
+              auto_generate_card_acceptor_identification_code: true
+              status: "Active"
+              schemes:
+                - "mastercard"
+              processing_type: "payout"
+              creation_date: "06-01-2021T18:00:00"
+              updated_date: "06-01-2021T18:00:00"
+              custom_settings:
+                is_highrisk: null
+            acquirer:
+              acquirer_key: "cko_mc_gb"
+              acquirer_name: "cko-mc"
+              acquirer_region: "GB"
+              acquirer_country_code: "GBR"
+              acquirer_country:
+                name: "United Kingdom of Great Britain and Northern Ireland (the)"
+                alpha2: "GB"
+                alpha3: "GBR"
+                numeric_code: "826"
+              forwarding_institution_id: "200481"
+              custom_settings:
+                acquirer_bin:
+                  - "230143"
+                acquirer_name: "Checkout MC"
+                processor_name: "Checkout Ltd."
+                acquirer_bid_ica: "14979"
+                legal_acquirer_name: "Checkout Ltd."
+                force_refund_recurring: false
+                acquirer_bin_ica_mappings:
+                  "230143": "014979"
+                interbank_card_association: "014979"
+                enable_refund_authorization: false
+                partner_transaction_type_identifiers: []
+              processor_key: "cko-mc"
+              processing_type_settings:
+                payin:
+                  routing_key: "cko_mc_eu_dual"
+                payout:
+                  routing_key: "cko_mc_eu_dual"
+              sca_exemptions:
+                transaction_risk_analysis:
+                  enabled: true
+                  currency_settings:
+                    GBP:
+                      limit: 220
+                low_value:
+                  enabled: true
+                  currency_settings:
+                    GBP:
+                      limit: 25
+                secure_corporate_payment:
+                  enabled: true
+                3ds_outage:
+                  enabled: true
+                sca_delegation:
+                  enabled: true
+              is_third_party_acquirer: false
+              is_network_token_supported: true
+              creation_date: "2021-10-11T06:32:31.572264"
+              updated_date: "2025-05-22T06:11:14.284185"
 
 test_scenarios:
-  - scenario: "Standard Authorization"
-    natural_language: "Authorize payment for payment_id pay_xyz"
+  - scenario: "Full Mastercard ISO Authorization"
+    description: "Complete authorization test using all required fields"
+    natural_language: |
+      Execute a Mastercard ISO authorization for payment_id pay_kgaohkfk72ketfpxkf55gpytwu 
+      with amount 1234 USD to recipient John younis in New York from sender Adrise in Moody AL
+      using card 5302318144933769 expiring 08/2027 with service type mastercard_iso
+      and entity_id ent_yxjejosd7auuvm6w56i4fljye4
     expected_status: 201
+    expected_response:
+      response_code: "00"
+
+  - scenario: "Mastercard P2P Transfer"
+    description: "Person-to-person money transfer test"
+    natural_language: |
+      Send a Mastercard P2P transfer of 5000 USD from Bob Sender in Birmingham to Alice Receiver in Manchester
+      using payment_id pay_p2p_test_123 with service_type mastercard_send_p2p and fund_transfer_type AA
+      with card number 5302318144933769 expiring 12/2028
+    expected_status: 201
+    expected_response:
+      response_code: "00"
+
+  - scenario: "Mastercard Disbursement"
+    description: "Corporate disbursement/payout test"
+    natural_language: |
+      Process a Mastercard disbursement of 25000 USD for insurance claim payout
+      to Charlie Claimant in New York from Global Insurance Co using service_type mastercard_send_disbursement
+      with payment_id pay_disbursement_456 and fund_transfer_type BB
+    expected_status: 201
+    expected_response:
+      response_code: "00"
+
+  - scenario: "Authorization with Specific Processing Profile"
+    description: "Test with explicit processing profile and acquirer configuration"
+    natural_language: |
+      Authorize a Mastercard payment of 10000 EUR to recipient Maria Garcia in Madrid Spain
+      using payment_id pay_eu_test_789 with processing_key pp_4qwg6eib2udu5eteo2uxaiuxom
+      and acquirer cko_mc_gb with merchant_category_code 6536
+    expected_status: 201
+    expected_response:
+      response_code: "00"
   
 metadata:
   api_provider: "Mastercard"
