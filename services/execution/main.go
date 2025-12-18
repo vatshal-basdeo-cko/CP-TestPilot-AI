@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -17,11 +16,15 @@ import (
 	"github.com/testpilot-ai/execution/application/usecases"
 	"github.com/testpilot-ai/execution/infrastructure/adapters"
 	"github.com/testpilot-ai/execution/infrastructure/config"
+	"github.com/testpilot-ai/shared/logger"
 )
 
 func main() {
 	// Load environment variables
 	_ = godotenv.Load()
+
+	// Initialize logger
+	logger.Init("execution")
 
 	// Load configuration
 	cfg := config.LoadConfig()
@@ -29,7 +32,8 @@ func main() {
 	// Initialize database connection
 	pool, err := initDatabase(cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		logger.Err(err).Msg("Failed to connect to database")
+		os.Exit(1)
 	}
 	defer pool.Close()
 
@@ -49,7 +53,7 @@ func main() {
 
 	// Start server
 	serverAddr := fmt.Sprintf(":%s", cfg.ServerPort)
-	log.Printf("Starting Execution Service on %s", serverAddr)
+	logger.Infof("Starting Execution Service on %s", serverAddr)
 
 	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
@@ -57,12 +61,13 @@ func main() {
 
 	go func() {
 		if err := router.Run(serverAddr); err != nil {
-			log.Fatalf("Failed to start server: %v", err)
+			logger.Err(err).Msg("Failed to start server")
+			os.Exit(1)
 		}
 	}()
 
 	<-quit
-	log.Println("Shutting down server...")
+	logger.Info("Shutting down server...")
 }
 
 func initDatabase(databaseURL string) (*pgxpool.Pool, error) {
@@ -79,7 +84,7 @@ func initDatabase(databaseURL string) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("unable to ping database: %w", err)
 	}
 
-	log.Println("Successfully connected to database")
+	logger.Info("Successfully connected to database")
 	return pool, nil
 }
 

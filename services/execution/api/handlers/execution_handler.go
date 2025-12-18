@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/testpilot-ai/execution/application/usecases"
 	"github.com/testpilot-ai/execution/domain/entities"
+	"github.com/testpilot-ai/shared/logger"
 )
 
 // ExecutionHandler handles execution-related HTTP requests
@@ -28,21 +29,43 @@ func NewExecutionHandler(
 
 // ExecuteAPICall handles API execution requests
 func (h *ExecutionHandler) ExecuteAPICall(c *gin.Context) {
+	requestID, _ := c.Get("request_id")
+	requestIDStr, _ := requestID.(string)
+
 	var request entities.APIRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
+		logger.WithRequestID(requestIDStr).Debug().
+			Err(err).
+			Msg("Invalid request body")
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	logger.WithRequestID(requestIDStr).Info().
+		Str("method", request.Method).
+		Str("url", request.URL).
+		Str("request_id", request.ID.String()).
+		Msg("Executing API call")
+
 	// Execute the API call
 	response, err := h.executeUseCase.Execute(c.Request.Context(), &request)
 	if err != nil {
+		logger.WithRequestID(requestIDStr).Err(err).
+			Str("request_id", request.ID.String()).
+			Msg("API execution failed")
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":    err.Error(),
 			"response": response,
 		})
 		return
 	}
+
+	logger.WithRequestID(requestIDStr).Info().
+		Str("request_id", request.ID.String()).
+		Int("status_code", response.StatusCode).
+		Int64("execution_time_ms", response.ExecutionTimeMs).
+		Bool("success", response.Success).
+		Msg("API call executed")
 
 	c.JSON(http.StatusOK, response)
 }
