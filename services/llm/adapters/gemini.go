@@ -78,7 +78,7 @@ func (p *GeminiProvider) Complete(ctx context.Context, prompt string) (string, e
 		},
 		GenerationConfig: &GeminiGenerationConfig{
 			Temperature:     0.7,
-			MaxOutputTokens: 2000,
+			MaxOutputTokens: 8192,
 		},
 	}
 

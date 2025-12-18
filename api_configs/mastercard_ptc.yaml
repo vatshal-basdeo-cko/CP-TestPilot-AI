@@ -19,7 +19,7 @@ endpoints:
     
     request_schema:
       type: "object"
-      required: ["amount", "currency", "service_type", "entity_id", "sequence_number", "sender", "recipient", "card"]
+      required: ["amount", "currency", "service_type", "entity_id", "sequence_number", "sender", "recipient", "card", "merchant_acquirer_configuration"]
       properties:
         service_type:
           type: "string"
@@ -91,6 +91,7 @@ endpoints:
           example: 1000000000
         card:
           type: "object"
+          required: ["card_number", "expiry_month", "expiry_year"]
           properties:
             card_number:
               type: "string"
@@ -104,6 +105,7 @@ endpoints:
         recipient:
           type: "object"
           description: "Recipient/beneficiary details for the payment"
+          required: ["first_name", "last_name", "address", "city", "country", "account_number"]
           properties:
             first_name:
               type: "string"
@@ -168,6 +170,7 @@ endpoints:
         sender:
           type: "object"
           description: "Sender/originator details for the payment"
+          required: ["first_name", "last_name", "address", "city", "country", "account_number"]
           properties:
             account_type:
               type: "integer"
@@ -239,11 +242,13 @@ endpoints:
               example: "gbr"
         merchant_acquirer_configuration:
           type: "object"
-          description: "Merchant and acquirer configuration for processing"
+          description: "Merchant and acquirer configuration for processing - REQUIRED for all transactions"
+          required: ["processing_profile", "acquirer"]
           properties:
             processing_profile:
               type: "object"
               description: "Processing profile configuration"
+              required: ["processing_profile_name", "entity_id", "business_model", "acquirer_key", "status", "schemes", "processing_type", "business_settings"]
               properties:
                 processing_profile_name:
                   type: "string"
@@ -307,6 +312,7 @@ endpoints:
             acquirer:
               type: "object"
               description: "Acquirer configuration"
+              required: ["acquirer_key", "acquirer_name", "acquirer_country_code", "forwarding_institution_id", "processor_key", "custom_settings"]
               properties:
                 acquirer_key:
                   type: "string"

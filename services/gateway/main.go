@@ -66,6 +66,15 @@ func main() {
 		authProtected.GET("/me", authHandler.Me)
 	}
 
+	// User management routes (admin only)
+	users := router.Group("/api/v1/users")
+	users.Use(middleware.AuthMiddleware())
+	{
+		users.GET("", authHandler.ListUsers)
+		users.POST("", authHandler.CreateUser)
+		users.DELETE("/:id", authHandler.DeleteUser)
+	}
+
 	// Protected service proxy routes
 	// Ingestion service
 	router.Any("/api/v1/ingest/*path", middleware.AuthMiddleware(), func(c *gin.Context) {

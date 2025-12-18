@@ -8,11 +8,10 @@ export default function Layout() {
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main className="flex-1 p-6 ml-64 mt-16">
+        <main className="flex-1 p-6 ml-60 mt-14 min-h-[calc(100vh-3.5rem)]">
           <Outlet />
         </main>
       </div>
     </div>
   );
 }
-
