@@ -202,10 +202,32 @@ func (h *LLMHandler) ConstructRequest(c *gin.Context) {
 	// Parse response into APICall - extract JSON from markdown if needed
 	var apiCall entities.APICall
 	jsonStr := extractJSON(response)
+	
+	// Check if we extracted valid JSON
+	if jsonStr == "" || jsonStr == response {
+		logger.WithRequestID(requestIDStr).Warn().
+			Str("response_preview", truncateString(response, 200)).
+			Msg("No valid JSON found in LLM response")
+		c.JSON(http.StatusOK, gin.H{
+			"api_call":       nil,
+			"raw_json":       response,
+			"parse_error":    "No valid JSON structure found in LLM response",
+			"generated_data": generatedData,
+		})
+		return
+	}
+
 	if err := json.Unmarshal([]byte(jsonStr), &apiCall); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":        "Failed to parse LLM response",
-			"raw_response": response,
+		// Return partial success with raw JSON for debugging
+		logger.WithRequestID(requestIDStr).Warn().
+			Err(err).
+			Str("json_preview", truncateString(jsonStr, 200)).
+			Msg("Failed to unmarshal LLM JSON response")
+		c.JSON(http.StatusOK, gin.H{
+			"api_call":       nil,
+			"raw_json":       jsonStr,
+			"parse_error":    err.Error(),
+			"generated_data": generatedData,
 		})
 		return
 	}
@@ -361,4 +383,12 @@ func extractJSON(response string) string {
 	}
 
 	return response
+}
+
+// truncateString truncates a string to a maximum length for logging
+func truncateString(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen] + "..."
 }

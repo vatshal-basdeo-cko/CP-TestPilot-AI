@@ -76,7 +76,28 @@ func (h *IngestionHandler) IngestFile(c *gin.Context) {
 		return
 	}
 
-	// Generate embeddings and store
+	// Check if same name+version exists (update scenario)
+	existingByName, _ := h.postgresRepo.GetAPISpecificationByNameVersion(c.Request.Context(), config.Name, config.Version)
+	if existingByName != nil {
+		// Update existing: delete old Qdrant vector, then update
+		apiID, err := h.updateExistingSpec(c, existingByName, config, contentHash, "file", req.FilePath)
+		if err != nil {
+			h.logIngestion(c, "file", req.FilePath, "failed", 0, err.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to update: %s", err)})
+			return
+		}
+
+		h.logIngestion(c, "file", req.FilePath, "updated", 1, "")
+		c.JSON(http.StatusOK, gin.H{
+			"message": "File updated successfully",
+			"api_id":  apiID,
+			"name":    config.Name,
+			"version": config.Version,
+		})
+		return
+	}
+
+	// Generate embeddings and store (new file)
 	apiID, err := h.processAndStore(c, config, contentHash, "file", req.FilePath)
 	if err != nil {
 		h.logIngestion(c, "file", req.FilePath, "failed", 0, err.Error())
@@ -238,6 +259,34 @@ func (h *IngestionHandler) ListAPIs(c *gin.Context) {
 	})
 }
 
+// DeleteAPI deletes an API specification and its Qdrant vectors
+func (h *IngestionHandler) DeleteAPI(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid API ID format"})
+		return
+	}
+
+	// Delete from Qdrant first
+	if err := h.qdrantAdapter.Delete(id); err != nil {
+		// Log but continue - Qdrant vector may not exist
+		fmt.Printf("Warning: failed to delete from Qdrant for %s: %v\n", idStr, err)
+	}
+
+	// Delete from PostgreSQL
+	if err := h.postgresRepo.DeleteAPISpecification(c.Request.Context(), id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to delete API: %s", err)})
+		return
+	}
+
+	h.logIngestion(c, "delete", idStr, "success", 1, "")
+	c.JSON(http.StatusOK, gin.H{
+		"message": "API deleted successfully",
+		"id":      idStr,
+	})
+}
+
 // processAndStore generates embeddings and stores the API config
 func (h *IngestionHandler) processAndStore(c *gin.Context, config *entities.APIConfig, contentHash, sourceType, sourcePath string) (uuid.UUID, error) {
 	apiID := uuid.New()
@@ -307,6 +356,60 @@ func (h *IngestionHandler) generateEmbeddingText(config *entities.APIConfig) str
 	}
 
 	return text
+}
+
+// updateExistingSpec updates an existing API specification with new content
+func (h *IngestionHandler) updateExistingSpec(c *gin.Context, existing *entities.APISpecification, config *entities.APIConfig, contentHash, sourceType, sourcePath string) (uuid.UUID, error) {
+	now := time.Now()
+
+	// Delete old Qdrant vector
+	if err := h.qdrantAdapter.Delete(existing.ID); err != nil {
+		// Log but continue - old vector may not exist
+		fmt.Printf("Warning: failed to delete old Qdrant vector for %s: %v\n", existing.ID, err)
+	}
+
+	// Generate new embedding text
+	embeddingText := h.generateEmbeddingText(config)
+
+	// Generate new embedding
+	embedding, err := h.embeddingService.GenerateEmbedding(embeddingText)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("failed to generate embedding: %w", err)
+	}
+
+	// Store new vector in Qdrant with same ID
+	configJSON, _ := json.Marshal(config)
+	point := adapters.QdrantPoint{
+		ID:     existing.ID.String(),
+		Vector: embedding,
+		Payload: map[string]interface{}{
+			"api_name":    config.Name,
+			"version":     config.Version,
+			"description": config.Description,
+			"endpoints":   len(config.Endpoints),
+			"config":      string(configJSON),
+		},
+	}
+
+	if err := h.qdrantAdapter.Upsert([]adapters.QdrantPoint{point}); err != nil {
+		return uuid.Nil, fmt.Errorf("failed to store in Qdrant: %w", err)
+	}
+
+	// Update PostgreSQL record
+	existing.ContentHash = contentHash
+	existing.SourcePath = sourcePath
+	existing.UpdatedAt = now
+	existing.Metadata = map[string]interface{}{
+		"description": config.Description,
+		"base_url":    config.BaseURL,
+		"endpoints":   len(config.Endpoints),
+	}
+
+	if err := h.postgresRepo.UpdateAPISpecification(c.Request.Context(), existing); err != nil {
+		return uuid.Nil, fmt.Errorf("failed to update database: %w", err)
+	}
+
+	return existing.ID, nil
 }
 
 // logIngestion logs an ingestion operation
