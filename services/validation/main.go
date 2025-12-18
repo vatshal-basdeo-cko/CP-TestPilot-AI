@@ -11,11 +11,15 @@ import (
 	"github.com/testpilot-ai/validation/adapters"
 	"github.com/testpilot-ai/validation/config"
 	"github.com/testpilot-ai/validation/handlers"
+	"github.com/testpilot-ai/shared/logger"
 )
 
 func main() {
 	// Load .env file if exists
 	_ = godotenv.Load()
+
+	// Initialize logger
+	logger.Init("validation")
 
 	// Load configuration
 	cfg := config.Load()
@@ -28,15 +32,17 @@ func main() {
 	// Connect to PostgreSQL
 	pool, err := pgxpool.New(context.Background(), cfg.DatabaseURL())
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		logger.Err(err).Msg("Failed to connect to database")
+		os.Exit(1)
 	}
 	defer pool.Close()
 
 	// Verify database connection
 	if err := pool.Ping(context.Background()); err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
+		logger.Err(err).Msg("Failed to ping database")
+		os.Exit(1)
 	}
-	log.Println("Connected to PostgreSQL")
+	logger.Info("Connected to PostgreSQL")
 
 	// Initialize adapters
 	schemaValidator := adapters.NewJSONSchemaValidator()
@@ -74,9 +80,9 @@ func main() {
 		port = "8004"
 	}
 
-	log.Printf("Validation service starting on port %s", port)
+	logger.Infof("Validation service starting on port %s", port)
 	if err := router.Run(":" + port); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		logger.Err(err).Msg("Failed to start server")
 		os.Exit(1)
 	}
 }
