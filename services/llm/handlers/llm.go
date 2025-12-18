@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -142,6 +143,9 @@ func (h *LLMHandler) ParseRequest(c *gin.Context) {
 
 // ConstructRequest constructs an API request from parse result
 func (h *LLMHandler) ConstructRequest(c *gin.Context) {
+	requestID, _ := c.Get("request_id")
+	requestIDStr, _ := requestID.(string)
+
 	var req struct {
 		ParseResult  map[string]interface{} `json:"parse_result" binding:"required"`
 		APIConfig    map[string]interface{} `json:"api_config,omitempty"`
@@ -173,10 +177,20 @@ func (h *LLMHandler) ConstructRequest(c *gin.Context) {
 		return
 	}
 
-	// Build prompt
+	// Retrieve API context using RAG for the api_name from parse result
+	var apiContext string
+	if apiName, ok := req.ParseResult["api_name"].(string); ok && apiName != "" {
+		apiContext, _ = h.retrieveAPIContext(c.Request.Context(), apiName)
+		logger.WithRequestID(requestIDStr).Debug().
+			Str("api_name", apiName).
+			Str("api_context_length", fmt.Sprintf("%d", len(apiContext))).
+			Msg("Retrieved API context for construct")
+	}
+
+	// Build prompt with API context included
 	parseResultJSON, _ := json.Marshal(req.ParseResult)
 	apiConfigJSON, _ := json.Marshal(req.APIConfig)
-	prompt := prompts.ConstructRequestPrompt(string(parseResultJSON), string(apiConfigJSON), generatedData)
+	prompt := prompts.ConstructRequestPromptWithContext(string(parseResultJSON), string(apiConfigJSON), apiContext, generatedData)
 
 	// Call LLM
 	response, err := provider.Complete(c.Request.Context(), prompt)
@@ -185,9 +199,10 @@ func (h *LLMHandler) ConstructRequest(c *gin.Context) {
 		return
 	}
 
-	// Parse response into APICall
+	// Parse response into APICall - extract JSON from markdown if needed
 	var apiCall entities.APICall
-	if err := json.Unmarshal([]byte(response), &apiCall); err != nil {
+	jsonStr := extractJSON(response)
+	if err := json.Unmarshal([]byte(jsonStr), &apiCall); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error":        "Failed to parse LLM response",
 			"raw_response": response,

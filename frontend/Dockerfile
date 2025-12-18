@@ -1,6 +1,10 @@
 # Build stage
 FROM node:20-alpine AS builder
 
+# Accept build-time environment variable for API Gateway URL
+ARG VITE_API_GATEWAY_URL=http://localhost:9000
+ENV VITE_API_GATEWAY_URL=${VITE_API_GATEWAY_URL}
+
 WORKDIR /app
 
 # Copy package files
@@ -12,7 +16,7 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build the application
+# Build the application (VITE_API_GATEWAY_URL is available at build time)
 RUN npm run build
 
 # Production stage

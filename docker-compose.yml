@@ -237,7 +237,7 @@ services:
       dockerfile: Dockerfile
     container_name: testpilot-frontend
     environment:
-      - VITE_API_GATEWAY_URL=http://localhost:8000
+      - VITE_API_GATEWAY_URL=http://localhost:9000
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     depends_on:
