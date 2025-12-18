@@ -12,6 +12,7 @@ import (
 	"github.com/testpilot-ai/llm/adapters"
 	"github.com/testpilot-ai/llm/domain/entities"
 	"github.com/testpilot-ai/llm/prompts"
+	"github.com/testpilot-ai/shared/logger"
 )
 
 // LLMHandler handles LLM-related HTTP requests
@@ -53,12 +54,18 @@ func (h *LLMHandler) Health(c *gin.Context) {
 
 // ParseRequest parses a natural language request
 func (h *LLMHandler) ParseRequest(c *gin.Context) {
+	requestID, _ := c.Get("request_id")
+	requestIDStr, _ := requestID.(string)
+
 	var req struct {
 		NaturalLanguage string `json:"natural_language" binding:"required"`
 		Provider        string `json:"provider,omitempty"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.WithRequestID(requestIDStr).Debug().
+			Err(err).
+			Msg("Invalid parse request")
 		c.JSON(http.StatusBadRequest, gin.H{"error": "natural_language is required"})
 		return
 	}
@@ -66,13 +73,23 @@ func (h *LLMHandler) ParseRequest(c *gin.Context) {
 	// Get LLM provider
 	provider := h.providerFactory.GetProvider(req.Provider)
 	if provider == nil {
+		logger.WithRequestID(requestIDStr).Warn().
+			Str("provider", req.Provider).
+			Msg("No LLM provider available")
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "No LLM provider available"})
 		return
 	}
 
+	logger.WithRequestID(requestIDStr).Info().
+		Str("provider", req.Provider).
+		Int("nl_length", len(req.NaturalLanguage)).
+		Msg("Parsing natural language request")
+
 	// Get API context from vector search (RAG)
 	apiContext, err := h.retrieveAPIContext(c.Request.Context(), req.NaturalLanguage)
 	if err != nil {
+		logger.WithRequestID(requestIDStr).Err(err).
+			Msg("Failed to retrieve API context")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to retrieve API context"})
 		return
 	}
@@ -81,9 +98,17 @@ func (h *LLMHandler) ParseRequest(c *gin.Context) {
 	prompt := prompts.ParseRequestPrompt(req.NaturalLanguage, apiContext)
 	response, err := provider.Complete(c.Request.Context(), prompt)
 	if err != nil {
+		logger.WithRequestID(requestIDStr).Err(err).
+			Str("provider", req.Provider).
+			Msg("LLM completion failed")
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "LLM error: " + err.Error()})
 		return
 	}
+
+	logger.WithRequestID(requestIDStr).Debug().
+		Str("provider", req.Provider).
+		Int("response_length", len(response)).
+		Msg("LLM response received")
 
 	// Parse LLM response - try to extract JSON from markdown if needed
 	var parseResult entities.ParseResult

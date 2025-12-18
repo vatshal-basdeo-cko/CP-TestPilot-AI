@@ -11,11 +11,15 @@ import (
 	"github.com/testpilot-ai/llm/adapters"
 	"github.com/testpilot-ai/llm/config"
 	"github.com/testpilot-ai/llm/handlers"
+	"github.com/testpilot-ai/shared/logger"
 )
 
 func main() {
 	// Load .env file if exists
 	_ = godotenv.Load()
+
+	// Initialize logger
+	logger.Init("llm")
 
 	// Load configuration
 	cfg := config.Load()
@@ -28,15 +32,17 @@ func main() {
 	// Connect to PostgreSQL
 	pool, err := pgxpool.New(context.Background(), cfg.DatabaseURL())
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		logger.Err(err).Msg("Failed to connect to database")
+		os.Exit(1)
 	}
 	defer pool.Close()
 
 	// Verify database connection
 	if err := pool.Ping(context.Background()); err != nil {
-		log.Fatalf("Failed to ping database: %v", err)
+		logger.Err(err).Msg("Failed to ping database")
+		os.Exit(1)
 	}
-	log.Println("Connected to PostgreSQL")
+	logger.Info("Connected to PostgreSQL")
 
 	// Initialize providers
 	providerFactory := adapters.NewProviderFactory(
@@ -46,15 +52,17 @@ func main() {
 		cfg.DefaultProvider,
 	)
 
-	log.Printf("Available LLM providers: %v", providerFactory.ListAvailableProviders())
-	log.Printf("Default provider: %s", providerFactory.GetDefaultProviderName())
+	logger.Info().
+		Strs("providers", providerFactory.ListAvailableProviders()).
+		Str("default_provider", providerFactory.GetDefaultProviderName()).
+		Msg("LLM providers initialized")
 
 	// Initialize Gemini embedding adapter for RAG
 	geminiEmbedding := adapters.NewGeminiEmbeddingAdapter(cfg.GeminiAPIKey)
 	if geminiEmbedding.IsAvailable() {
-		log.Println("Gemini embeddings enabled for RAG")
+		logger.Info("Gemini embeddings enabled for RAG")
 	} else {
-		log.Println("Warning: Gemini embeddings not configured - RAG will not work")
+		logger.Warn("Gemini embeddings not configured - RAG will not work")
 	}
 
 	// Initialize adapters
@@ -95,9 +103,9 @@ func main() {
 		port = "8002"
 	}
 
-	log.Printf("LLM service starting on port %s", port)
+	logger.Infof("LLM service starting on port %s", port)
 	if err := router.Run(":" + port); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+		logger.Err(err).Msg("Failed to start server")
 		os.Exit(1)
 	}
 }
