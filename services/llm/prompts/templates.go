@@ -31,7 +31,11 @@ Parse the user's request and extract:
 1. The intent (what action they want to perform)
 2. Which API/endpoint matches their request
 3. Any parameters mentioned in their request
-4. Any missing required parameters that need clarification
+4. For parameters NOT mentioned by the user, use the string "[AUTO]" to indicate they should be auto-generated with test data
+
+IMPORTANT: For payment/test fields like card_number, expiry_month, expiry_year, cvv, account_number, first_name, last_name, address, city, country, phone, email - use "[AUTO]" instead of null. These will be automatically filled with realistic test data.
+
+Only use null for truly business-critical fields that the user MUST specify (like payment_id, transaction type, or specific amounts the user wants).
 
 Respond in this JSON format:
 {
@@ -40,9 +44,9 @@ Respond in this JSON format:
     "endpoint": "the specific endpoint path",
     "method": "HTTP method",
     "parameters": {
-        "param_name": "value or null if not specified"
+        "param_name": "value, '[AUTO]' for auto-generate, or null if user must specify"
     },
-    "missing_required": ["list of required params not provided"],
+    "missing_required": ["list of required params user MUST provide - not auto-generatable ones"],
     "confidence": 0.0 to 1.0
 }`, SystemPrompt, apiContext, naturalLanguage)
 }

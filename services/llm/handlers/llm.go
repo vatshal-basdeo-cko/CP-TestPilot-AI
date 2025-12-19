@@ -122,7 +122,61 @@ func (h *LLMHandler) ParseRequest(c *gin.Context) {
 		}
 	}
 
-	// Check if clarification is needed
+	// Auto-generate test data for common fields that shouldn't require user input
+	autoGenerateFields := map[string]bool{
+		"card_number":    true,
+		"card_expiry":    true,
+		"expiry_month":   true,
+		"expiry_year":    true,
+		"cvv":            true,
+		"cvc":            true,
+		"pan":            true,
+		"account_number": true,
+		"first_name":     true,
+		"last_name":      true,
+		"address":        true,
+		"city":           true,
+		"country":        true,
+		"postal_code":    true,
+		"zip_code":       true,
+		"phone":          true,
+		"email":          true,
+	}
+
+	// Auto-fill parameters marked with "[AUTO]" or nil for auto-generatable fields
+	if len(parseResult.Parameters) > 0 {
+		for key, val := range parseResult.Parameters {
+			shouldAutoGenerate := false
+			
+			// Check if LLM marked it as "[AUTO]"
+			if strVal, ok := val.(string); ok && strings.ToUpper(strVal) == "[AUTO]" {
+				shouldAutoGenerate = true
+			}
+			
+			// Check if nil and it's an auto-generatable field
+			if val == nil {
+				keyLower := strings.ToLower(key)
+				if autoGenerateFields[keyLower] {
+					shouldAutoGenerate = true
+				} else {
+					// Also check for partial matches
+					for autoField := range autoGenerateFields {
+						if strings.Contains(keyLower, autoField) || strings.Contains(autoField, keyLower) {
+							shouldAutoGenerate = true
+							break
+						}
+					}
+				}
+			}
+			
+			if shouldAutoGenerate {
+				// Auto-generate the value using faker
+				parseResult.Parameters[key] = h.faker.GenerateByType(key, "string", "")
+			}
+		}
+	}
+
+	// Check if clarification is still needed (only for fields that couldn't be auto-generated)
 	if len(parseResult.Parameters) > 0 {
 		for key, val := range parseResult.Parameters {
 			if val == nil {
