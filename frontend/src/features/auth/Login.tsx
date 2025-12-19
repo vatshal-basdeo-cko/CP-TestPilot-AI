@@ -1,7 +1,8 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Zap, AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
+import Logo from '../../components/Logo';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -30,13 +31,13 @@ export default function Login() {
       <div className="w-full max-w-md relative z-10">
         {/* Logo and branding */}
         <div className="text-center mb-10">
-          <div className="w-14 h-14 bg-gradient-to-br from-primary to-primary-light rounded-xl flex items-center justify-center mx-auto mb-5 shadow-glow">
-            <Zap className="w-7 h-7 text-white" />
+          <div className="mx-auto mb-6 flex justify-center">
+            <Logo size={72} variant="hero" />
           </div>
-          <h1 className="text-2xl font-semibold text-text-primary tracking-tight">
-            TestPilot<span className="text-primary">AI</span>
+          <h1 className="text-3xl font-bold text-text-primary tracking-tight">
+            TestPilot<span className="text-primary">.AI</span>
           </h1>
-          <p className="text-text-muted text-sm mt-1.5">Intelligent API Testing Platform</p>
+          <p className="text-text-muted text-sm mt-2">Intelligent API Testing Platform</p>
         </div>
 
         {/* Login card */}
@@ -106,7 +107,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={isLoading || !username || !password}
-              className="w-full py-3 px-4 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 mt-6"
+              className="w-full py-3 px-4 bg-primary text-background font-semibold rounded-lg hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 mt-6"
             >
               {isLoading ? (
                 <>
