@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Calendar, Filter, Loader2, Search, RefreshCw } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Calendar, Filter, Loader2, Search, RefreshCw, Download } from 'lucide-react';
 import { historyApi, HistoryFilters } from '../../api/history';
 import HistoryTable from './HistoryTable';
 import TestDetailModal from './TestDetailModal';
+import { exportToJSON, exportToCSV } from '../../utils/export';
 import type { TestExecution } from '../../types';
 
 export default function HistoryPage() {
@@ -12,11 +13,23 @@ export default function HistoryPage() {
     offset: 0,
   });
   const [selectedExecution, setSelectedExecution] = useState<TestExecution | null>(null);
+  const queryClient = useQueryClient();
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['history', filters],
     queryFn: () => historyApi.list(filters),
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: historyApi.delete,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['history'] });
+    },
+  });
+
+  const handleDeleteExecution = async (id: string) => {
+    await deleteMutation.mutateAsync(id);
+  };
 
   const handleStatusFilter = (status: string) => {
     if (status === 'all') {
@@ -38,18 +51,53 @@ export default function HistoryPage() {
           <h1 className="text-2xl font-bold text-white mb-2">Test History</h1>
           <p className="text-gray-400">View and analyze past test executions.</p>
         </div>
-        <button
-          onClick={() => refetch()}
-          className="flex items-center gap-2 px-4 py-2 bg-surface-light text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Refresh
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Export Buttons */}
+          {data?.executions && data.executions.length > 0 && (
+            <>
+              <button
+                onClick={() => exportToJSON(data.executions)}
+                className="flex items-center gap-2 px-4 py-2 bg-surface-light text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
+                title="Export as JSON"
+              >
+                <Download className="w-4 h-4" />
+                JSON
+              </button>
+              <button
+                onClick={() => exportToCSV(data.executions)}
+                className="flex items-center gap-2 px-4 py-2 bg-surface-light text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
+                title="Export as CSV"
+              >
+                <Download className="w-4 h-4" />
+                CSV
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => refetch()}
+            className="flex items-center gap-2 px-4 py-2 bg-surface-light text-gray-300 rounded-lg hover:bg-gray-600 transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
       <div className="bg-surface rounded-lg border border-surface-light p-4">
         <div className="flex flex-wrap items-center gap-4">
+          {/* Search Input */}
+          <div className="flex items-center gap-2 flex-1 min-w-[200px] max-w-[400px]">
+            <Search className="w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={filters.search || ''}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value || undefined, offset: 0 })}
+              placeholder="Search by natural language request..."
+              className="flex-1 px-3 py-2 bg-background border border-surface-light rounded-lg text-white text-sm placeholder-gray-500"
+            />
+          </div>
+
           {/* Status Filter */}
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-gray-400" />
@@ -144,6 +192,7 @@ export default function HistoryPage() {
         <TestDetailModal
           execution={selectedExecution}
           onClose={() => setSelectedExecution(null)}
+          onDelete={handleDeleteExecution}
         />
       )}
     </div>

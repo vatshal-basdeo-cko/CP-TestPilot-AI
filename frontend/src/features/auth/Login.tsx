@@ -1,11 +1,13 @@
 import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Rocket, AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '../../store/auth';
+import Logo from '../../components/Logo';
 
 export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const { login, isLoading, error, clearError } = useAuthStore();
   const navigate = useNavigate();
 
@@ -20,37 +22,46 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary to-cyan-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-primary/20">
-            <Rocket className="w-8 h-8 text-white" />
+    <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background effects */}
+      <div className="absolute inset-0 bg-mesh-gradient pointer-events-none" />
+      <div className="absolute top-1/4 -left-32 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-1/4 -right-32 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
+      
+      <div className="w-full max-w-md relative z-10">
+        {/* Logo and branding */}
+        <div className="text-center mb-10">
+          <div className="mx-auto mb-6 flex justify-center">
+            <Logo size={72} variant="hero" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">TestPilot AI</h1>
-          <p className="text-gray-400">AI-Powered API Testing Platform</p>
+          <h1 className="text-3xl font-bold text-text-primary tracking-tight">
+            TestPilot<span className="text-primary">.AI</span>
+          </h1>
+          <p className="text-text-muted text-sm mt-2">Intelligent API Testing Platform</p>
         </div>
 
-        {/* Login Form */}
-        <div className="bg-surface rounded-2xl p-8 shadow-xl border border-surface-light">
-          <h2 className="text-xl font-semibold text-white mb-6">Sign in to your account</h2>
+        {/* Login card */}
+        <div className="bg-surface rounded-xl p-8 border border-border-default shadow-xl shadow-black/20">
+          <h2 className="text-lg font-medium text-text-primary mb-6">Sign in to continue</h2>
 
           {error && (
-            <div className="mb-4 p-3 rounded-lg bg-error/10 border border-error/20 flex items-center gap-2 text-error animate-slideIn">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm">{error}</span>
+            <div className="mb-5 p-3.5 rounded-lg bg-error/10 border border-error/20 flex items-start gap-3 animate-slideIn">
+              <AlertCircle className="w-5 h-5 text-error flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <span className="text-sm text-error">{error}</span>
+              </div>
               <button
                 onClick={clearError}
-                className="ml-auto text-error/60 hover:text-error"
+                className="text-error/60 hover:text-error text-lg leading-none"
               >
                 ×
               </button>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="username" className="block text-sm font-medium text-text-secondary mb-2">
                 Username
               </label>
               <input
@@ -58,54 +69,63 @@ export default function Login() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 bg-surface-light border border-surface-light rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-surface-light border border-border-default rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                 placeholder="Enter your username"
                 required
                 autoComplete="username"
+                disabled={isLoading}
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-text-secondary mb-2">
                 Password
               </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-surface-light border border-surface-light rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                placeholder="Enter your password"
-                required
-                autoComplete="current-password"
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 pr-12 bg-surface-light border border-border-default rounded-lg text-text-primary placeholder-text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                  placeholder="Enter your password"
+                  required
+                  autoComplete="current-password"
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
 
             <button
               type="submit"
-              disabled={isLoading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-primary to-cyan-500 text-white font-semibold rounded-lg hover:from-primary-dark hover:to-cyan-600 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+              disabled={isLoading || !username || !password}
+              className="w-full py-3 px-4 bg-primary text-background font-semibold rounded-lg hover:bg-primary-light focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 mt-6"
             >
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  Signing in...
+                  <span>Signing in...</span>
                 </>
               ) : (
-                'Sign in'
+                <span>Sign in</span>
               )}
             </button>
           </form>
-
-          <div className="mt-6 pt-6 border-t border-surface-light">
-            <p className="text-sm text-gray-400 text-center">
-              Default credentials: <code className="text-primary">admin</code> /{' '}
-              <code className="text-primary">admin123</code>
-            </p>
-          </div>
         </div>
+
+        {/* Footer */}
+        <p className="text-center text-text-muted text-xs mt-8">
+          Secure authentication powered by JWT
+        </p>
       </div>
     </div>
   );
 }
-

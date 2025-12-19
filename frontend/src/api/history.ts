@@ -1,11 +1,12 @@
 import apiClient from './client';
-import type { HistoryResponse, TestExecution } from '../types';
+import type { HistoryResponse, TestExecution, ValidationResult } from '../types';
 
 export interface HistoryFilters {
   status?: 'success' | 'failed' | 'error';
   api_id?: string;
   from_date?: string;
   to_date?: string;
+  search?: string;
   limit?: number;
   offset?: number;
 }
@@ -26,6 +27,19 @@ export const historyApi = {
 
   get: async (id: string): Promise<TestExecution> => {
     const response = await apiClient.get<TestExecution>(`/api/v1/history/${id}`);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<{ message: string; id: string }> => {
+    const response = await apiClient.delete<{ message: string; id: string }>(`/api/v1/history/${id}`);
+    return response.data;
+  },
+
+  updateValidation: async (id: string, validationResult: ValidationResult): Promise<{ message: string; id: string }> => {
+    const response = await apiClient.patch<{ message: string; id: string }>(
+      `/api/v1/history/${id}/validation`,
+      { validation_result: validationResult }
+    );
     return response.data;
   },
 };

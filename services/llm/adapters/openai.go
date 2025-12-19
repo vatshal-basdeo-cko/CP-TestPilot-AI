@@ -44,7 +44,7 @@ func (p *OpenAIProvider) Complete(ctx context.Context, prompt string) (string, e
 				},
 			},
 			Temperature: 0.7,
-			MaxTokens:   2000,
+			MaxTokens:   8192,
 		},
 	)
 

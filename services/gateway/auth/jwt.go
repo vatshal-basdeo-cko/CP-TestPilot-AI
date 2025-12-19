@@ -2,13 +2,23 @@ package auth
 
 import (
 	"errors"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
-var jwtSecret = []byte("your-secret-key-change-in-production") // TODO: Load from env
+var jwtSecret []byte
+
+func init() {
+	secret := os.Getenv("JWT_SECRET")
+	if secret == "" {
+		// Default for development only - should be set in production
+		secret = "testpilot-dev-secret-change-in-production"
+	}
+	jwtSecret = []byte(secret)
+}
 
 type Claims struct {
 	UserID uuid.UUID `json:"user_id"`

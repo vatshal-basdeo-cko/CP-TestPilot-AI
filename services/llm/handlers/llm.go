@@ -122,7 +122,61 @@ func (h *LLMHandler) ParseRequest(c *gin.Context) {
 		}
 	}
 
-	// Check if clarification is needed
+	// Auto-generate test data for common fields that shouldn't require user input
+	autoGenerateFields := map[string]bool{
+		"card_number":    true,
+		"card_expiry":    true,
+		"expiry_month":   true,
+		"expiry_year":    true,
+		"cvv":            true,
+		"cvc":            true,
+		"pan":            true,
+		"account_number": true,
+		"first_name":     true,
+		"last_name":      true,
+		"address":        true,
+		"city":           true,
+		"country":        true,
+		"postal_code":    true,
+		"zip_code":       true,
+		"phone":          true,
+		"email":          true,
+	}
+
+	// Auto-fill parameters marked with "[AUTO]" or nil for auto-generatable fields
+	if len(parseResult.Parameters) > 0 {
+		for key, val := range parseResult.Parameters {
+			shouldAutoGenerate := false
+			
+			// Check if LLM marked it as "[AUTO]"
+			if strVal, ok := val.(string); ok && strings.ToUpper(strVal) == "[AUTO]" {
+				shouldAutoGenerate = true
+			}
+			
+			// Check if nil and it's an auto-generatable field
+			if val == nil {
+				keyLower := strings.ToLower(key)
+				if autoGenerateFields[keyLower] {
+					shouldAutoGenerate = true
+				} else {
+					// Also check for partial matches
+					for autoField := range autoGenerateFields {
+						if strings.Contains(keyLower, autoField) || strings.Contains(autoField, keyLower) {
+							shouldAutoGenerate = true
+							break
+						}
+					}
+				}
+			}
+			
+			if shouldAutoGenerate {
+				// Auto-generate the value using faker
+				parseResult.Parameters[key] = h.faker.GenerateByType(key, "string", "")
+			}
+		}
+	}
+
+	// Check if clarification is still needed (only for fields that couldn't be auto-generated)
 	if len(parseResult.Parameters) > 0 {
 		for key, val := range parseResult.Parameters {
 			if val == nil {
@@ -202,10 +256,32 @@ func (h *LLMHandler) ConstructRequest(c *gin.Context) {
 	// Parse response into APICall - extract JSON from markdown if needed
 	var apiCall entities.APICall
 	jsonStr := extractJSON(response)
+	
+	// Check if we extracted valid JSON
+	if jsonStr == "" || jsonStr == response {
+		logger.WithRequestID(requestIDStr).Warn().
+			Str("response_preview", truncateString(response, 200)).
+			Msg("No valid JSON found in LLM response")
+		c.JSON(http.StatusOK, gin.H{
+			"api_call":       nil,
+			"raw_json":       response,
+			"parse_error":    "No valid JSON structure found in LLM response",
+			"generated_data": generatedData,
+		})
+		return
+	}
+
 	if err := json.Unmarshal([]byte(jsonStr), &apiCall); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":        "Failed to parse LLM response",
-			"raw_response": response,
+		// Return partial success with raw JSON for debugging
+		logger.WithRequestID(requestIDStr).Warn().
+			Err(err).
+			Str("json_preview", truncateString(jsonStr, 200)).
+			Msg("Failed to unmarshal LLM JSON response")
+		c.JSON(http.StatusOK, gin.H{
+			"api_call":       nil,
+			"raw_json":       jsonStr,
+			"parse_error":    err.Error(),
+			"generated_data": generatedData,
 		})
 		return
 	}
@@ -361,4 +437,12 @@ func extractJSON(response string) string {
 	}
 
 	return response
+}
+
+// truncateString truncates a string to a maximum length for logging
+func truncateString(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen] + "..."
 }

@@ -83,6 +83,59 @@ func (r *PostgresRepository) GetAPISpecificationByHash(ctx context.Context, cont
 	return &spec, nil
 }
 
+// GetAPISpecificationByNameVersion retrieves an API specification by name and version
+func (r *PostgresRepository) GetAPISpecificationByNameVersion(ctx context.Context, name, version string) (*entities.APISpecification, error) {
+	query := `
+		SELECT id, name, version, source_type, source_path, content_hash, metadata, created_at, updated_at, created_by
+		FROM api_specifications
+		WHERE name = $1 AND version = $2
+		LIMIT 1
+	`
+
+	var spec entities.APISpecification
+	err := r.pool.QueryRow(ctx, query, name, version).Scan(
+		&spec.ID,
+		&spec.Name,
+		&spec.Version,
+		&spec.SourceType,
+		&spec.SourcePath,
+		&spec.ContentHash,
+		&spec.Metadata,
+		&spec.CreatedAt,
+		&spec.UpdatedAt,
+		&spec.CreatedBy,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &spec, nil
+}
+
+// UpdateAPISpecification updates an existing API specification
+func (r *PostgresRepository) UpdateAPISpecification(ctx context.Context, spec *entities.APISpecification) error {
+	query := `
+		UPDATE api_specifications 
+		SET content_hash = $1, metadata = $2, updated_at = $3, source_path = $4
+		WHERE id = $5
+	`
+
+	_, err := r.pool.Exec(ctx, query,
+		spec.ContentHash,
+		spec.Metadata,
+		spec.UpdatedAt,
+		spec.SourcePath,
+		spec.ID,
+	)
+
+	if err != nil {
+		return fmt.Errorf("failed to update API specification: %w", err)
+	}
+
+	return nil
+}
+
 // GetAllAPISpecifications retrieves all API specifications
 func (r *PostgresRepository) GetAllAPISpecifications(ctx context.Context) ([]entities.APISpecification, error) {
 	query := `

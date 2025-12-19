@@ -91,6 +91,7 @@ func main() {
 		// Status and listing
 		api.GET("/ingest/status", ingestionHandler.GetStatus)
 		api.GET("/apis", ingestionHandler.ListAPIs)
+		api.DELETE("/apis/:id", ingestionHandler.DeleteAPI)
 	}
 
 	// Start server

@@ -16,6 +16,12 @@ type QueryRepository interface {
 	// ListExecutions retrieves executions with filters
 	ListExecutions(ctx context.Context, filters Filters) ([]entities.TestExecution, int64, error)
 	
+	// DeleteExecution removes an execution by ID
+	DeleteExecution(ctx context.Context, id uuid.UUID) error
+
+	// UpdateValidationResult updates the validation result for an execution
+	UpdateValidationResult(ctx context.Context, id uuid.UUID, validationResult map[string]interface{}) error
+	
 	// GetAnalytics retrieves aggregated statistics
 	GetAnalytics(ctx context.Context, startDate, endDate *time.Time) (*entities.Analytics, error)
 	

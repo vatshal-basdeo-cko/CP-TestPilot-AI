@@ -48,12 +48,21 @@ help:
 	@echo ""
 	@echo "$(GREEN)Testing:$(NC)"
 	@echo "  make test           - Run all tests"
+	@echo "  make test-all       - Test all service endpoints"
 	@echo "  make test-ingestion - Test ingestion service endpoints"
+	@echo "  make test-llm       - Test LLM service endpoints"
+	@echo "  make test-execution - Test execution service endpoints"
+	@echo "  make test-validation- Test validation service endpoints"
+	@echo "  make test-query     - Test query service endpoints"
+	@echo "  make test-gateway   - Test gateway endpoints"
 	@echo ""
 	@echo "$(GREEN)Development:$(NC)"
 	@echo "  make db-shell       - Access PostgreSQL shell"
 	@echo "  make db-tables      - Show database tables"
+	@echo "  make backup-db      - Backup PostgreSQL database"
+	@echo "  make restore-db     - Restore database from backup"
 	@echo "  make qdrant-ui      - Open Qdrant dashboard in browser"
+	@echo "  make grafana-ui     - Open Grafana dashboard"
 	@echo "  make dev            - Start development environment"
 	@echo ""
 	@echo "$(GREEN)Quick Actions:$(NC)"
@@ -74,7 +83,7 @@ setup:
 	@echo ""
 	@echo "$(YELLOW)2. Setting up environment...$(NC)"
 	@if [ ! -f .env ]; then \
-		cp .env.example .env; \
+		cp env.example .env; \
 		echo "$(GREEN)✅ Created .env file from template$(NC)"; \
 		echo "$(RED)⚠️  IMPORTANT: Edit .env and add your LLM API key!$(NC)"; \
 		echo "$(RED)   Required: OPENAI_API_KEY or ANTHROPIC_API_KEY$(NC)"; \
@@ -172,11 +181,11 @@ status:
 	@echo "$(YELLOW)Docker Containers:$(NC)"
 	@docker-compose ps
 	@echo ""
-	@echo "$(YELLOW)Port Usage:$(NC)"
+	@echo "$(YELLOW)External Port Usage (access from host):$(NC)"
 	@echo "  Frontend:     localhost:3000"
-	@echo "  API Gateway:  localhost:8000"
-	@echo "  Ingestion:    localhost:8001"
-	@echo "  LLM:          localhost:8002"
+	@echo "  API Gateway:  localhost:9000"
+	@echo "  Ingestion:    localhost:9001"
+	@echo "  LLM:          localhost:9002"
 	@echo "  Execution:    localhost:8003"
 	@echo "  Validation:   localhost:8004"
 	@echo "  Query:        localhost:8005"
@@ -194,25 +203,25 @@ health:
 	@echo "$(YELLOW)Qdrant:$(NC)"
 	@curl -s -f http://localhost:6333/healthz > /dev/null 2>&1 && echo "$(GREEN)✅ Healthy$(NC)" || echo "$(RED)❌ Not responding$(NC)"
 	@echo ""
-	@echo "$(YELLOW)Gateway:$(NC)"
-	@curl -s -f http://localhost:8000/health > /dev/null 2>&1 && echo "$(GREEN)✅ Healthy$(NC)" || echo "$(RED)❌ Not responding$(NC)"
+	@echo "$(YELLOW)Gateway (port 9000):$(NC)"
+	@curl -s -f http://localhost:9000/health > /dev/null 2>&1 && echo "$(GREEN)✅ Healthy$(NC)" || echo "$(RED)❌ Not responding$(NC)"
 	@echo ""
-	@echo "$(YELLOW)Ingestion Service:$(NC)"
-	@curl -s -f http://localhost:8001/health > /dev/null 2>&1 && echo "$(GREEN)✅ Healthy$(NC)" || echo "$(RED)❌ Not responding$(NC)"
+	@echo "$(YELLOW)Ingestion Service (port 9001):$(NC)"
+	@curl -s -f http://localhost:9001/health > /dev/null 2>&1 && echo "$(GREEN)✅ Healthy$(NC)" || echo "$(RED)❌ Not responding$(NC)"
 	@echo ""
-	@echo "$(YELLOW)LLM Service:$(NC)"
-	@curl -s -f http://localhost:8002/health > /dev/null 2>&1 && echo "$(GREEN)✅ Healthy$(NC)" || echo "$(RED)❌ Not responding$(NC)"
+	@echo "$(YELLOW)LLM Service (port 9002):$(NC)"
+	@curl -s -f http://localhost:9002/health > /dev/null 2>&1 && echo "$(GREEN)✅ Healthy$(NC)" || echo "$(RED)❌ Not responding$(NC)"
 	@echo ""
-	@echo "$(YELLOW)Execution Service:$(NC)"
+	@echo "$(YELLOW)Execution Service (port 8003):$(NC)"
 	@curl -s -f http://localhost:8003/health > /dev/null 2>&1 && echo "$(GREEN)✅ Healthy$(NC)" || echo "$(RED)❌ Not responding$(NC)"
 	@echo ""
-	@echo "$(YELLOW)Validation Service:$(NC)"
+	@echo "$(YELLOW)Validation Service (port 8004):$(NC)"
 	@curl -s -f http://localhost:8004/health > /dev/null 2>&1 && echo "$(GREEN)✅ Healthy$(NC)" || echo "$(RED)❌ Not responding$(NC)"
 	@echo ""
-	@echo "$(YELLOW)Query Service:$(NC)"
+	@echo "$(YELLOW)Query Service (port 8005):$(NC)"
 	@curl -s -f http://localhost:8005/health > /dev/null 2>&1 && echo "$(GREEN)✅ Healthy$(NC)" || echo "$(RED)❌ Not responding$(NC)"
 	@echo ""
-	@echo "$(YELLOW)Frontend:$(NC)"
+	@echo "$(YELLOW)Frontend (port 3000):$(NC)"
 	@curl -s -f http://localhost:3000 > /dev/null 2>&1 && echo "$(GREEN)✅ Healthy$(NC)" || echo "$(RED)❌ Not responding$(NC)"
 
 ## logs: View logs for all services
@@ -300,13 +309,13 @@ test-ingestion:
 	@echo "=========================="
 	@echo ""
 	@echo "$(YELLOW)1. Health check...$(NC)"
-	@curl -s http://localhost:8001/health | python3 -m json.tool && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
+	@curl -s http://localhost:9001/health | python3 -m json.tool && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
 	@echo ""
 	@echo "$(YELLOW)2. List APIs...$(NC)"
-	@curl -s http://localhost:8001/api/v1/apis | python3 -m json.tool | head -20 && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
+	@curl -s http://localhost:9001/api/v1/apis | python3 -m json.tool | head -20 && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
 	@echo ""
 	@echo "$(YELLOW)3. Ingestion status...$(NC)"
-	@curl -s http://localhost:8001/api/v1/ingest/status | python3 -m json.tool | head -30 && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
+	@curl -s http://localhost:9001/api/v1/ingest/status | python3 -m json.tool | head -30 && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
 
 ## db-shell: Access PostgreSQL shell
 db-shell:
@@ -351,7 +360,7 @@ dev:
 check-ports:
 	@echo "$(BLUE)Checking port availability...$(NC)"
 	@echo ""
-	@for port in 3000 5432 6333 8000 8001 8002 8003 8004 8005; do \
+	@for port in 3000 5432 6333 9000 9001 9002 8003 8004 8005; do \
 		if lsof -Pi :$$port -sTCP:LISTEN -t >/dev/null 2>&1; then \
 			echo "$(RED)❌ Port $$port is in use$(NC)"; \
 		else \
@@ -400,8 +409,101 @@ test-gateway:
 	@echo "$(YELLOW)2. All services health...$(NC)"
 	@curl -s http://localhost:8000/health/all | python3 -m json.tool && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
 
+## test-llm: Test LLM service endpoints
+test-llm:
+	@echo "$(BLUE)Testing LLM Service$(NC)"
+	@echo "==================="
+	@echo ""
+	@echo "$(YELLOW)1. Health check...$(NC)"
+	@curl -s http://localhost:8002/health | python3 -m json.tool && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
+	@echo ""
+	@echo "$(YELLOW)2. List providers...$(NC)"
+	@curl -s http://localhost:8002/api/v1/providers | python3 -m json.tool && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
+
+## test-execution: Test Execution service endpoints
+test-execution:
+	@echo "$(BLUE)Testing Execution Service$(NC)"
+	@echo "========================="
+	@echo ""
+	@echo "$(YELLOW)1. Health check...$(NC)"
+	@curl -s http://localhost:8003/health | python3 -m json.tool && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
+	@echo ""
+	@echo "$(YELLOW)2. List environments...$(NC)"
+	@curl -s http://localhost:8003/api/v1/environments | python3 -m json.tool | head -20 && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
+
+## test-validation: Test Validation service endpoints
+test-validation:
+	@echo "$(BLUE)Testing Validation Service$(NC)"
+	@echo "==========================="
+	@echo ""
+	@echo "$(YELLOW)1. Health check...$(NC)"
+	@curl -s http://localhost:8004/health | python3 -m json.tool && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
+	@echo ""
+	@echo "$(YELLOW)2. List rules...$(NC)"
+	@curl -s http://localhost:8004/api/v1/rules | python3 -m json.tool | head -20 && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
+
+## test-query: Test Query service endpoints
+test-query:
+	@echo "$(BLUE)Testing Query Service$(NC)"
+	@echo "====================="
+	@echo ""
+	@echo "$(YELLOW)1. Health check...$(NC)"
+	@curl -s http://localhost:8005/health | python3 -m json.tool && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
+	@echo ""
+	@echo "$(YELLOW)2. Get history...$(NC)"
+	@curl -s http://localhost:8005/api/v1/history | python3 -m json.tool | head -30 && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
+
+## test-users: Test user management endpoints
+test-users:
+	@echo "$(BLUE)Testing User Management$(NC)"
+	@echo "========================"
+	@echo ""
+	@echo "$(YELLOW)1. Register with admin role (should fail)...$(NC)"
+	@curl -s -X POST http://localhost:8000/api/v1/auth/register \
+		-H "Content-Type: application/json" \
+		-d '{"username":"test","password":"password123","role":"admin"}' | python3 -m json.tool
+	@echo ""
+	@echo "$(YELLOW)2. Register with short password (should fail)...$(NC)"
+	@curl -s -X POST http://localhost:8000/api/v1/auth/register \
+		-H "Content-Type: application/json" \
+		-d '{"username":"test","password":"short"}' | python3 -m json.tool
+	@echo ""
+
+## backup-db: Backup PostgreSQL database
+backup-db:
+	@echo "$(BLUE)Backing up database...$(NC)"
+	@docker exec testpilot-postgres pg_dump -U testpilot testpilot > backup_$$(date +%Y%m%d_%H%M%S).sql
+	@echo "$(GREEN)✅ Backup created$(NC)"
+
+## restore-db: Restore PostgreSQL database from backup
+restore-db:
+	@echo "$(YELLOW)Available backups:$(NC)"
+	@ls -la backup_*.sql 2>/dev/null || echo "No backups found"
+	@echo ""
+	@read -p "Enter backup filename to restore: " file; \
+	if [ -f "$$file" ]; then \
+		docker exec -i testpilot-postgres psql -U testpilot testpilot < $$file; \
+		echo "$(GREEN)✅ Database restored from $$file$(NC)"; \
+	else \
+		echo "$(RED)❌ File not found$(NC)"; \
+	fi
+
+## grafana-ui: Open Grafana dashboard
+grafana-ui:
+	@echo "$(BLUE)Opening Grafana dashboard...$(NC)"
+	@echo "$(YELLOW)Default credentials: admin / admin$(NC)"
+	@open http://localhost:3001 || xdg-open http://localhost:3001 || echo "Open http://localhost:3001 in your browser"
+
+## logs-loki: View Loki logs
+logs-loki:
+	@docker-compose logs -f loki
+
+## logs-grafana: View Grafana logs
+logs-grafana:
+	@docker-compose logs -f grafana
+
 ## test-all: Test all service endpoints
-test-all: test-gateway test-ingestion
+test-all: test-gateway test-ingestion test-llm test-execution test-validation test-query test-users
 	@echo ""
 	@echo "$(GREEN)✅ All tests completed$(NC)"
 

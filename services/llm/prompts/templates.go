@@ -31,7 +31,11 @@ Parse the user's request and extract:
 1. The intent (what action they want to perform)
 2. Which API/endpoint matches their request
 3. Any parameters mentioned in their request
-4. Any missing required parameters that need clarification
+4. For parameters NOT mentioned by the user, use the string "[AUTO]" to indicate they should be auto-generated with test data
+
+IMPORTANT: For payment/test fields like card_number, expiry_month, expiry_year, cvv, account_number, first_name, last_name, address, city, country, phone, email - use "[AUTO]" instead of null. These will be automatically filled with realistic test data.
+
+Only use null for truly business-critical fields that the user MUST specify (like payment_id, transaction type, or specific amounts the user wants).
 
 Respond in this JSON format:
 {
@@ -40,9 +44,9 @@ Respond in this JSON format:
     "endpoint": "the specific endpoint path",
     "method": "HTTP method",
     "parameters": {
-        "param_name": "value or null if not specified"
+        "param_name": "value, '[AUTO]' for auto-generate, or null if user must specify"
     },
-    "missing_required": ["list of required params not provided"],
+    "missing_required": ["list of required params user MUST provide - not auto-generatable ones"],
     "confidence": 0.0 to 1.0
 }`, SystemPrompt, apiContext, naturalLanguage)
 }
@@ -79,22 +83,35 @@ func ConstructRequestPromptWithContext(parseResult string, apiConfig string, api
 %s
 
 ## Task
-Construct the complete API request with:
-1. **IMPORTANT**: Build the FULL URL by combining the base_url from the API context with the endpoint path
-   - Example: If base_url is "http://example.com/api" and path is "/users/{id}", the full URL should be "http://example.com/api/users/123"
-2. Replace ALL path parameters with actual values from the parameters (e.g., {payment_id} -> pay_xyz)
-3. All required headers including Content-Type
-4. Query parameters if applicable
-5. Request body with all required fields from the API schema
+Construct the complete API request. **CRITICAL REQUIREMENTS**:
 
-Respond in this JSON format:
+1. **USE THE EXAMPLE AS A TEMPLATE**: Start with the complete example request from the API context and modify only the fields the user specified. Keep ALL other fields from the example.
+
+2. **INCLUDE ALL REQUIRED NESTED OBJECTS**: The request body MUST include:
+   - All top-level required fields
+   - Complete "sender" object with: first_name, last_name, address, city, country, account_number
+   - Complete "recipient" object with: first_name, last_name, address, city, country, account_number  
+   - Complete "card" object with: card_number, expiry_month, expiry_year
+   - Complete "merchant_acquirer_configuration" with both:
+     - "processing_profile": processing_profile_name, entity_id, business_model, acquirer_key, status, schemes, processing_type, business_settings
+     - "acquirer": acquirer_key, acquirer_name, acquirer_country_code, forwarding_institution_id, processor_key, custom_settings
+
+3. **BUILD THE FULL URL**: Combine base_url + endpoint path with path parameters replaced
+   - Example: base_url "http://cp-ptc.qa.internal/mastercard" + path "/authorizations/{payment_id}/paytocard" 
+   - Result: "http://cp-ptc.qa.internal/mastercard/authorizations/pay_xyz123/paytocard"
+
+4. **USE EXAMPLE VALUES FOR UNSPECIFIED FIELDS**: For any field the user didn't mention, use the value from the example in the API context.
+
+5. All required headers including Content-Type: application/json
+
+Respond in this JSON format (body must be a complete, valid payload):
 {
     "method": "GET/POST/PUT/DELETE",
     "url": "FULL URL starting with http:// or https:// with all path params replaced",
     "path": "the endpoint path",
-    "headers": {"header_name": "value"},
-    "query_params": {"param": "value"},
-    "body": {"field": "value"},
+    "headers": {"Content-Type": "application/json"},
+    "query_params": {},
+    "body": {COMPLETE request body with ALL required nested objects},
     "confidence": 0.0 to 1.0
 }`, SystemPrompt, parseResult, apiConfig, contextStr, dataStr)
 }

@@ -4,15 +4,14 @@ import Sidebar from './Sidebar';
 
 export default function Layout() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background bg-mesh-gradient">
       <Navbar />
       <div className="flex">
         <Sidebar />
-        <main className="flex-1 p-6 ml-64 mt-16">
+        <main className="flex-1 p-6 ml-64 mt-16 min-h-[calc(100vh-4rem)]">
           <Outlet />
         </main>
       </div>
     </div>
   );
 }
-

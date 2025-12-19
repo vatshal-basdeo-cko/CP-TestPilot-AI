@@ -70,13 +70,16 @@ export interface ExecuteRequest {
   headers?: Record<string, string>;
   body?: unknown;
   environment_id?: string;
+  natural_language_request?: string;
 }
 
 export interface ExecuteResponse {
+  id: string;
   status_code: number;
   headers: Record<string, string>;
   body: unknown;
   execution_time_ms: number;
+  success: boolean;
 }
 
 export interface Environment {
@@ -122,5 +125,23 @@ export interface TestExecution {
 export interface HistoryResponse {
   executions: TestExecution[];
   total: number;
+}
+
+// Analytics types
+export interface APIStats {
+  api_name: string;
+  test_count: number;
+  success_count: number;
+  success_rate: number;
+}
+
+export interface AnalyticsOverview {
+  total_tests: number;
+  successful_tests: number;
+  failed_tests: number;
+  success_rate: number;
+  avg_execution_time_ms: number;
+  top_apis?: APIStats[];
+  recent_tests?: TestExecution[];
 }
 

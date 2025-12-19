@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import TestInput from './TestInput';
 import ClarificationDialog from './ClarificationDialog';
@@ -8,9 +9,34 @@ import ValidationResults from './ValidationResults';
 import { llmApi } from '../../api/llm';
 import { executionApi } from '../../api/execution';
 import { validationApi } from '../../api/validation';
+import { historyApi } from '../../api/history';
 import type { ParseResult, ConstructedRequest, ExecuteResponse, ValidationResult, Clarification } from '../../types';
 
 type TestStep = 'idle' | 'parsing' | 'clarifying' | 'constructing' | 'executing' | 'validating' | 'complete';
+
+// Determine expected status code based on HTTP method and actual response
+function getExpectedStatusCode(method: string, actualStatusCode: number): number {
+  const upperMethod = method.toUpperCase();
+  
+  // If the actual status code is in the 2xx range, use it as the expected code
+  // This handles cases like 201 for POST, 204 for DELETE, etc.
+  if (actualStatusCode >= 200 && actualStatusCode < 300) {
+    return actualStatusCode;
+  }
+  
+  // Default expected status codes by method (for when response is an error)
+  switch (upperMethod) {
+    case 'POST':
+      return 201; // Created
+    case 'DELETE':
+      return 204; // No Content (or 200)
+    case 'PUT':
+    case 'PATCH':
+    case 'GET':
+    default:
+      return 200; // OK
+  }
+}
 
 interface TestState {
   step: TestStep;
@@ -19,9 +45,18 @@ interface TestState {
   response: ExecuteResponse | null;
   validationResult: ValidationResult | null;
   error: string | null;
+  naturalLanguageInput: string;
+}
+
+interface LocationState {
+  prefillInput?: string;
 }
 
 export default function TestExecutionPage() {
+  const location = useLocation();
+  const locationState = location.state as LocationState | null;
+  const prefillInput = locationState?.prefillInput || '';
+
   const [state, setState] = useState<TestState>({
     step: 'idle',
     parseResult: null,
@@ -29,12 +64,13 @@ export default function TestExecutionPage() {
     response: null,
     validationResult: null,
     error: null,
+    naturalLanguageInput: '',
   });
 
   const [clarification, setClarification] = useState<Clarification | null>(null);
 
   const handleSubmit = async (input: string) => {
-    setState({ ...state, step: 'parsing', error: null });
+    setState({ ...state, step: 'parsing', error: null, naturalLanguageInput: input });
 
     try {
       // Step 1: Parse natural language
@@ -49,7 +85,7 @@ export default function TestExecutionPage() {
       }
 
       // Continue with construction
-      await constructAndExecute(parseResult);
+      await constructAndExecute(parseResult, input);
     } catch (err) {
       setState((prev) => ({
         ...prev,
@@ -75,10 +111,10 @@ export default function TestExecutionPage() {
     };
 
     setState((prev) => ({ ...prev, parseResult: updatedParseResult }));
-    await constructAndExecute(updatedParseResult);
+    await constructAndExecute(updatedParseResult, state.naturalLanguageInput);
   };
 
-  const constructAndExecute = async (parseResult: ParseResult) => {
+  const constructAndExecute = async (parseResult: ParseResult, naturalLanguageInput: string) => {
     try {
       // Step 2: Construct request
       setState((prev) => ({ ...prev, step: 'constructing' }));
@@ -92,16 +128,29 @@ export default function TestExecutionPage() {
         url: constructedRequest.url,
         headers: constructedRequest.headers,
         body: constructedRequest.body,
+        natural_language_request: naturalLanguageInput,
       });
       setState((prev) => ({ ...prev, response }));
 
       // Step 4: Validate
       setState((prev) => ({ ...prev, step: 'validating' }));
+      // Determine expected status code based on HTTP method
+      const expectedStatusCode = getExpectedStatusCode(constructedRequest.method, response.status_code);
       const validationResult = await validationApi.validate(
         { status_code: response.status_code, body: response.body },
-        200
+        expectedStatusCode
       );
       setState((prev) => ({ ...prev, validationResult, step: 'complete' }));
+
+      // Step 5: Link validation result back to the test execution record
+      if (response.id) {
+        try {
+          await historyApi.updateValidation(response.id, validationResult);
+        } catch (updateErr) {
+          console.error('Failed to save validation result:', updateErr);
+          // Don't fail the test for this error
+        }
+      }
     } catch (err) {
       setState((prev) => ({
         ...prev,
@@ -119,6 +168,7 @@ export default function TestExecutionPage() {
       response: null,
       validationResult: null,
       error: null,
+      naturalLanguageInput: '',
     });
     setClarification(null);
   };
@@ -134,7 +184,7 @@ export default function TestExecutionPage() {
         </p>
       </div>
 
-      <TestInput onSubmit={handleSubmit} isLoading={isLoading} />
+      <TestInput onSubmit={handleSubmit} isLoading={isLoading} initialValue={prefillInput} />
 
       {/* Loading indicator */}
       {isLoading && (

@@ -20,6 +20,8 @@ func SetupRouter(handler *handlers.QueryHandler) *gin.Engine {
 		// History endpoints
 		v1.GET("/history", handler.GetHistory)
 		v1.GET("/history/:id", handler.GetExecution)
+		v1.DELETE("/history/:id", handler.DeleteExecution)
+		v1.PATCH("/history/:id/validation", handler.UpdateValidationResult)
 
 		// Analytics endpoints
 		analytics := v1.Group("/analytics")
