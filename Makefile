@@ -404,10 +404,10 @@ test-gateway:
 	@echo "========================"
 	@echo ""
 	@echo "$(YELLOW)1. Health check...$(NC)"
-	@curl -s http://localhost:8000/health | python3 -m json.tool && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
+	@curl -s http://localhost:9000/health | python3 -m json.tool && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
 	@echo ""
 	@echo "$(YELLOW)2. All services health...$(NC)"
-	@curl -s http://localhost:8000/health/all | python3 -m json.tool && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
+	@curl -s http://localhost:9000/health/all | python3 -m json.tool && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
 
 ## test-llm: Test LLM service endpoints
 test-llm:
@@ -415,10 +415,10 @@ test-llm:
 	@echo "==================="
 	@echo ""
 	@echo "$(YELLOW)1. Health check...$(NC)"
-	@curl -s http://localhost:8002/health | python3 -m json.tool && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
+	@curl -s http://localhost:9002/health | python3 -m json.tool && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
 	@echo ""
 	@echo "$(YELLOW)2. List providers...$(NC)"
-	@curl -s http://localhost:8002/api/v1/providers | python3 -m json.tool && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
+	@curl -s http://localhost:9002/api/v1/providers | python3 -m json.tool && echo "$(GREEN)✅ Passed$(NC)" || echo "$(RED)❌ Failed$(NC)"
 
 ## test-execution: Test Execution service endpoints
 test-execution:
@@ -459,12 +459,12 @@ test-users:
 	@echo "========================"
 	@echo ""
 	@echo "$(YELLOW)1. Register with admin role (should fail)...$(NC)"
-	@curl -s -X POST http://localhost:8000/api/v1/auth/register \
+	@curl -s -X POST http://localhost:9000/api/v1/auth/register \
 		-H "Content-Type: application/json" \
 		-d '{"username":"test","password":"password123","role":"admin"}' | python3 -m json.tool
 	@echo ""
 	@echo "$(YELLOW)2. Register with short password (should fail)...$(NC)"
-	@curl -s -X POST http://localhost:8000/api/v1/auth/register \
+	@curl -s -X POST http://localhost:9000/api/v1/auth/register \
 		-H "Content-Type: application/json" \
 		-d '{"username":"test","password":"short"}' | python3 -m json.tool
 	@echo ""
