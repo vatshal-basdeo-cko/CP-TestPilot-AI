@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/testpilot-ai/shared/logger"
 )
 
@@ -62,6 +63,13 @@ func (sp *ServiceProxy) ProxyRequest(c *gin.Context, serviceName, path string) {
 	for key, values := range c.Request.Header {
 		for _, value := range values {
 			req.Header.Add(key, value)
+		}
+	}
+
+	// Add user_id header from context (set by auth middleware)
+	if userID, exists := c.Get("user_id"); exists {
+		if uid, ok := userID.(uuid.UUID); ok {
+			req.Header.Set("X-User-ID", uid.String())
 		}
 	}
 

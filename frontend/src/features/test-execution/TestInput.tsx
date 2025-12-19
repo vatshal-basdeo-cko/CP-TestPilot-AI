@@ -1,9 +1,10 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { Send, Sparkles } from 'lucide-react';
 
 interface TestInputProps {
   onSubmit: (input: string) => void;
   isLoading: boolean;
+  initialValue?: string;
 }
 
 const examplePrompts = [
@@ -14,8 +15,15 @@ const examplePrompts = [
   'Create a new payment of 99.99 USD',
 ];
 
-export default function TestInput({ onSubmit, isLoading }: TestInputProps) {
-  const [input, setInput] = useState('');
+export default function TestInput({ onSubmit, isLoading, initialValue = '' }: TestInputProps) {
+  const [input, setInput] = useState(initialValue);
+
+  // Update input when initialValue changes (e.g., from re-run navigation)
+  useEffect(() => {
+    if (initialValue) {
+      setInput(initialValue);
+    }
+  }, [initialValue]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();

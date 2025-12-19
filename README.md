@@ -3,10 +3,11 @@
 **Enterprise AI-powered API testing platform that converts natural language requests into executable API calls against QA environments.**
 
 ![Architecture](https://img.shields.io/badge/Architecture-Microservices-blue)
-![Python](https://img.shields.io/badge/Python-3.11+-green)
 ![Go](https://img.shields.io/badge/Go-1.21+-cyan)
-![C%23](https://img.shields.io/badge/C%23-.NET%208-purple)
 ![React](https://img.shields.io/badge/React-18-61DAFB)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791)
+![Qdrant](https://img.shields.io/badge/Qdrant-Vector_DB-orange)
 
 ---
 
@@ -24,7 +25,7 @@ TestPilot AI is an intelligent API testing platform designed for development and
 
 ## 🏗️ Architecture Overview
 
-### Polyglot Microservices Architecture
+### Microservices Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -40,7 +41,7 @@ TestPilot AI is an intelligent API testing platform designed for development and
    ▼        ▼        ▼        ▼        ▼                    ▼
 ┌──────┐┌──────┐┌──────┐┌──────┐┌──────────┐    ┌──────────────┐
 │Ingest││ LLM  ││Exec  ││Valid ││  Query   │    │   Qdrant     │
-│(Py)  ││ (Py) ││ (Go) ││ (C#) ││  (Go)    │◄───┤Vector Database│
+│(Go)  ││ (Go) ││ (Go) ││ (Go) ││  (Go)    │◄───┤Vector Database│
 └──┬───┘└──┬───┘└──┬───┘└──┬───┘└────┬─────┘    └──────────────┘
    │       │       │       │         │
    └───────┴───────┴───────┴─────────┘
@@ -55,10 +56,10 @@ TestPilot AI is an intelligent API testing platform designed for development and
 
 | Service | Language | Purpose |
 |---------|----------|---------|
-| **Ingestion** | Python | Ingest API configs from files, Postman collections, Git repos |
-| **LLM** | Python | Parse natural language, RAG pipeline, construct API requests |
+| **Ingestion** | Go | Ingest API configs from files, Postman collections, Git repos |
+| **LLM** | Go | Parse natural language, RAG pipeline, construct API requests |
 | **Execution** | Go | Execute API calls to QA environments |
-| **Validation** | C# | Validate responses with JSON schema and custom rules |
+| **Validation** | Go | Validate responses with JSON schema and custom rules |
 | **Query** | Go | Test history, search, analytics |
 | **Gateway** | Go | API gateway, authentication, routing |
 | **Frontend** | React + TS | Web UI with test interface and admin panel |
@@ -140,10 +141,10 @@ TestPilot AI is an intelligent API testing platform designed for development and
 ```
 CP-TestPilot-AI/
 ├── services/                   # Microservices
-│   ├── ingestion/             # Python - Ingestion service
-│   ├── llm/                   # Python - LLM service
+│   ├── ingestion/             # Go - Ingestion service
+│   ├── llm/                   # Go - LLM service
 │   ├── execution/             # Go - Execution service
-│   ├── validation/            # C# - Validation service
+│   ├── validation/            # Go - Validation service
 │   ├── query/                 # Go - Query service
 │   └── gateway/               # Go - API Gateway
 ├── frontend/                  # React + TypeScript
@@ -285,12 +286,10 @@ See `infrastructure/postgres/init.sql` for complete schema.
 Each service can be run independently for development:
 
 ```bash
-# Ingestion Service (Python)
+# Ingestion Service (Go)
 cd services/ingestion
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-uvicorn api.main:app --reload --port 8001
+go mod download
+go run main.go
 
 # Execution Service (Go)
 cd services/execution
@@ -329,9 +328,9 @@ npm run dev
 
 ```bash
 # Run all tests
-docker-compose exec ingestion pytest
+docker-compose exec ingestion go test ./...
 docker-compose exec execution go test ./...
-docker-compose exec validation dotnet test
+docker-compose exec validation go test ./...
 
 # Integration tests
 ./scripts/run-integration-tests.sh
@@ -388,10 +387,7 @@ Contributions are welcome! Please read our contributing guidelines first.
 ## 🙏 Acknowledgments
 
 Built with:
-- [FastAPI](https://fastapi.tiangolo.com/) - Python web framework
-- [LangChain](https://python.langchain.com/) - LLM orchestration
 - [Gin](https://gin-gonic.com/) - Go web framework
-- [ASP.NET Core](https://dotnet.microsoft.com/apps/aspnet) - C# web framework
 - [React](https://react.dev/) - Frontend framework
 - [Qdrant](https://qdrant.tech/) - Vector database
 - [PostgreSQL](https://www.postgresql.org/) - SQL database

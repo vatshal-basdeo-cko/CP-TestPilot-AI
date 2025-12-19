@@ -6,6 +6,7 @@ import Login from './features/auth/Login';
 import TestExecution from './features/test-execution/TestExecutionPage';
 import AdminPage from './features/admin/AdminPage';
 import HistoryPage from './features/history/HistoryPage';
+import AnalyticsPage from './features/analytics/AnalyticsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuthStore();
@@ -50,6 +51,7 @@ function App() {
           <Route path="test" element={<TestExecution />} />
           <Route path="admin" element={<AdminPage />} />
           <Route path="history" element={<HistoryPage />} />
+          <Route path="analytics" element={<AnalyticsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -63,12 +63,12 @@ func (r *PostgresRepository) SaveExecution(ctx context.Context, request *entitie
 
 	_, err = r.pool.Exec(ctx, query,
 		response.ID,
-		nil, // user_id - to be set when auth is implemented
+		request.UserID,
 		request.APISpecID,
-		"", // natural_language_request - from LLM service
+		request.NaturalLanguageRequest,
 		constructedReq,
 		responseJSON,
-		nil, // validation_result - from validation service
+		nil, // validation_result - set by validation service
 		status,
 		response.ExecutionTimeMs,
 		time.Now(),

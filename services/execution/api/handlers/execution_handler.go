@@ -41,10 +41,18 @@ func (h *ExecutionHandler) ExecuteAPICall(c *gin.Context) {
 		return
 	}
 
+	// Extract user_id from header (set by gateway after JWT validation)
+	if userIDStr := c.GetHeader("X-User-ID"); userIDStr != "" {
+		if userID, err := uuid.Parse(userIDStr); err == nil {
+			request.UserID = &userID
+		}
+	}
+
 	logger.WithRequestID(requestIDStr).Info().
 		Str("method", request.Method).
 		Str("url", request.URL).
 		Str("request_id", request.ID.String()).
+		Str("natural_language_request", request.NaturalLanguageRequest).
 		Msg("Executing API call")
 
 	// Execute the API call

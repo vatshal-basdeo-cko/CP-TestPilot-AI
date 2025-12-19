@@ -90,6 +90,18 @@ func (r *PostgresQueryRepository) ListExecutions(ctx context.Context, filters re
 		argCount++
 	}
 
+	if filters.StartDate != nil {
+		where = append(where, fmt.Sprintf("created_at >= $%d", argCount))
+		args = append(args, *filters.StartDate)
+		argCount++
+	}
+
+	if filters.EndDate != nil {
+		where = append(where, fmt.Sprintf("created_at <= $%d", argCount))
+		args = append(args, *filters.EndDate)
+		argCount++
+	}
+
 	whereClause := strings.Join(where, " AND ")
 
 	// Count total
@@ -208,6 +220,47 @@ func (r *PostgresQueryRepository) GetAPIAnalytics(ctx context.Context, apiSpecID
 	}
 
 	return stats, nil
+}
+
+// DeleteExecution removes an execution by ID
+func (r *PostgresQueryRepository) DeleteExecution(ctx context.Context, id uuid.UUID) error {
+	query := `DELETE FROM test_executions WHERE id = $1`
+	result, err := r.pool.Exec(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("execution not found")
+	}
+
+	return nil
+}
+
+// UpdateValidationResult updates the validation result for an execution
+func (r *PostgresQueryRepository) UpdateValidationResult(ctx context.Context, id uuid.UUID, validationResult map[string]interface{}) error {
+	validationJSON, err := json.Marshal(validationResult)
+	if err != nil {
+		return fmt.Errorf("failed to marshal validation result: %w", err)
+	}
+
+	// Also update status based on validation result
+	status := "success"
+	if isValid, ok := validationResult["is_valid"].(bool); ok && !isValid {
+		status = "failed"
+	}
+
+	query := `UPDATE test_executions SET validation_result = $1, status = $2 WHERE id = $3`
+	result, err := r.pool.Exec(ctx, query, validationJSON, status, id)
+	if err != nil {
+		return err
+	}
+
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("execution not found")
+	}
+
+	return nil
 }
 
 

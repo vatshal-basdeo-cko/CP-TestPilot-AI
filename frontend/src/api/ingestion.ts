@@ -24,5 +24,22 @@ export const ingestionApi = {
     const response = await apiClient.get('/api/v1/ingest/status');
     return response.data;
   },
+
+  uploadPostman: async (file: File): Promise<{
+    message: string;
+    api_id: string;
+    name: string;
+    endpoints: number;
+  }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await apiClient.post('/api/v1/ingest/postman', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
 };
 

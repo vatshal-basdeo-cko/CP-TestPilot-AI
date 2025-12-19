@@ -28,6 +28,16 @@ func (uc *GetTestHistoryUseCase) GetByID(ctx context.Context, id uuid.UUID) (*en
 	return uc.repo.FindExecutionByID(ctx, id)
 }
 
+// Delete removes an execution by ID
+func (uc *GetTestHistoryUseCase) Delete(ctx context.Context, id uuid.UUID) error {
+	return uc.repo.DeleteExecution(ctx, id)
+}
+
+// UpdateValidationResult updates the validation result for an execution
+func (uc *GetTestHistoryUseCase) UpdateValidationResult(ctx context.Context, id uuid.UUID, validationResult map[string]interface{}) error {
+	return uc.repo.UpdateValidationResult(ctx, id, validationResult)
+}
+
 
 
 

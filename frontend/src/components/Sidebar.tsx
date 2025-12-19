@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { FlaskConical, Settings, History, Activity } from 'lucide-react';
+import { FlaskConical, Settings, History, Activity, BarChart3 } from 'lucide-react';
 import { useAuthStore } from '../store/auth';
 
 const navItems = [
   { to: '/test', icon: FlaskConical, label: 'Test Execution', description: 'Run API tests' },
   { to: '/history', icon: History, label: 'History', description: 'View past results' },
+  { to: '/analytics', icon: BarChart3, label: 'Analytics', description: 'View statistics' },
   { to: '/admin', icon: Settings, label: 'Admin', description: 'System settings', adminOnly: true },
 ];
 

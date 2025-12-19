@@ -204,17 +204,40 @@ func (h *IngestionHandler) IngestPostman(c *gin.Context) {
 		return
 	}
 
-	// Check if already ingested
+	// Check if already ingested (same hash = no changes)
 	existing, _ := h.postgresRepo.GetAPISpecificationByHash(c.Request.Context(), contentHash)
 	if existing != nil {
 		c.JSON(http.StatusOK, gin.H{
-			"message": "Collection already ingested (no changes detected)",
-			"api_id":  existing.ID,
+			"message":   "Collection already ingested (no changes detected)",
+			"api_id":    existing.ID,
+			"name":      config.Name,
+			"endpoints": len(config.Endpoints),
 		})
 		return
 	}
 
-	// Process and store
+	// Check if same name+version exists (update scenario)
+	existingByName, _ := h.postgresRepo.GetAPISpecificationByNameVersion(c.Request.Context(), config.Name, config.Version)
+	if existingByName != nil {
+		// Update existing: delete old Qdrant vector, then update
+		apiID, err := h.updateExistingSpec(c, existingByName, config, contentHash, "postman", header.Filename)
+		if err != nil {
+			h.logIngestion(c, "postman", header.Filename, "failed", 0, err.Error())
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to update: %s", err)})
+			return
+		}
+
+		h.logIngestion(c, "postman", header.Filename, "updated", 1, "")
+		c.JSON(http.StatusOK, gin.H{
+			"message":   "Postman collection updated successfully",
+			"api_id":    apiID,
+			"name":      config.Name,
+			"endpoints": len(config.Endpoints),
+		})
+		return
+	}
+
+	// Process and store (new collection)
 	apiID, err := h.processAndStore(c, config, contentHash, "postman", header.Filename)
 	if err != nil {
 		h.logIngestion(c, "postman", header.Filename, "failed", 0, err.Error())

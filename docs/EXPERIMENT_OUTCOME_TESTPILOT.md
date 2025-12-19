@@ -17,13 +17,14 @@ IN REVIEW
 ## On this page
 - [Stakeholder summary](#stakeholder-summary)
 - [✨ Key Innovation](#-key-innovation)
+- [🚀 Latest Updates](#-latest-updates)
 - [💥 Business Impact](#-business-impact)
 - [📋 Experiment Planning](#-experiment-planning)
 - [🥼 Experiment Design & Methodology](#-experiment-design--methodology)
 - [📊 Results](#-results)
 - [✨ Conclusions](#-conclusions)
 - [📦 Takeaways](#-takeaways)
-- [👣 Follow-up](#-follow-up)
+- [👣 Follow-up & Future Roadmap](#-follow-up--future-roadmap)
 
 ---
 
@@ -38,6 +39,18 @@ The core innovation is the **context-aware request construction engine**. Unlike
 2.  **Retrieves** relevant API context based on a natural language query.
 3.  **Synthesizes** a valid HTTP request using Gemini Pro, including realistic test data generation.
 4.  **Validates** the response against both JSON schemas and business-specific rules.
+
+---
+
+## 🚀 Latest Updates
+Since the initial prototype phase, the following milestones have been achieved:
+
+- **Multi-Model Support**: Integrated a flexible provider factory supporting **OpenAI (GPT-4o)**, **Anthropic (Claude 3.5)**, and **Gemini Pro**, allowing for cost-performance optimization per task.
+- **Enhanced RAG Pipeline**: Fully operational retrieval system using **Qdrant** for vector storage and **Gemini-1.5-Flash** for high-speed embeddings of API specifications.
+- **Robust Ingestion**: Completed automated parsers for **OpenAPI (YAML/JSON)** and **Postman Collections (v2.1)**, enabling bulk onboarding of legacy API suites.
+- **Enterprise Validation Core**: Implemented a dedicated validation service in **Go** using high-performance JSON Schema libraries for strict contract enforcement.
+- **Intelligent Data Synthesis**: Integrated **Faker-based data generation** that contextually identifies field names (e.g., `card_number`, `expiry_date`) to provide realistic test values when user input is missing.
+- **Learning Feedback Loop**: Developed a persistence layer in **PostgreSQL** that records successful test patterns, enabling the system to "learn" from human-verified successes and improve future construction accuracy.
 
 ---
 
@@ -120,7 +133,7 @@ graph TD
 ---
 
 ## ✨ Conclusions
-The experiment confirms that a RAG-based approach is highly effective for automating the "human-in-the-middle" step of API testing. The modular Python/Go/C# architecture provided the necessary stability for complex request synthesis.
+The experiment confirms that a RAG-based approach is highly effective for automating the "human-in-the-middle" step of API testing. The modular **Go-based architecture** provided the necessary stability for complex request synthesis.
 
 ### Highlights
 -   **Speed**: Moving from minutes to seconds per test drastically improves developer velocity.
@@ -135,9 +148,16 @@ The experiment confirms that a RAG-based approach is highly effective for automa
 
 ---
 
-## 👣 Follow-up
--   **Hybrid Search**: Implement a combination of semantic and keyword search to improve retrieval of specific payment terminology.
--   **Multi-step Flows**: Enable "Chained Testing" where the output of one AI test (e.g., an auth token) is used as the input for the next.
--   **CI/CD Integration**: Move the /ai-test functionality into a GitHub Action to allow automated regression testing via natural language.
--   **Jira Integration**: Link test results back to Jira tickets to verify that the API behavior matches the documented acceptance criteria.
+## 👣 Follow-up & Future Roadmap
+The success of this pilot has paved the way for several advanced features designed to move TestPilot AI toward full production integration.
+
+### Short-Term Refinements
+- **Hybrid Retrieval Strategy**: Implementing a combination of **Semantic (Vector) search** and **Keyword (Lexical) search**. This will significantly improve accuracy when dealing with strict Payment Scheme nomenclature that vector embeddings might generalize.
+- **Confidence Re-ranker**: Adding a secondary verification step where a smaller model (e.g., Cross-Encoder) re-scores the top 10 retrieved document chunks for relevance before they are sent to the primary LLM for synthesis.
+
+### Long-Term Vision
+- **Jira Contextualization**: Automatically retrieving the linked **Jira Ticket** (based on branch name or PR title) to extract Acceptance Criteria. The AI will then verify if the code change correctly addresses the technical requirements specified in the ticket.
+- **Chained (Stateful) Execution**: Enabling multi-step test flows where the output of one API call (e.g., an `auth_token` or `transaction_id`) is automatically extracted and injected into the subsequent natural language request.
+- **GitOps Specification Sync**: Implementing a "watch" service that monitors Git repositories for changes to OpenAPI files and automatically re-indexes them into the vector database, ensuring the AI always works with the latest documentation.
+- **CI/CD Integration**: Formalizing a GitHub Action that allows developers to run `/ai-test` commands directly in PR comments, providing instant regression feedback before human review begins.
 

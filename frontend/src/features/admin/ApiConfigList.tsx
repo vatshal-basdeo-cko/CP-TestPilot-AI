@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Trash2, FileJson, Loader2, FolderSync } from 'lucide-react';
+import { Trash2, FileJson, Loader2, FolderSync, Upload } from 'lucide-react';
 import { ingestionApi } from '../../api/ingestion';
 import type { APISpecification } from '../../types';
 
@@ -23,6 +23,22 @@ export default function ApiConfigList() {
       setIsIngesting(false);
     },
   });
+
+  const uploadPostmanMutation = useMutation({
+    mutationFn: (file: File) => ingestionApi.uploadPostman(file),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['apis'] });
+    },
+  });
+
+  const handlePostmanUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      uploadPostmanMutation.mutate(file);
+    }
+    // Reset input so the same file can be re-uploaded
+    e.target.value = '';
+  };
 
   const handleIngest = () => {
     setIsIngesting(true);
@@ -54,24 +70,62 @@ export default function ApiConfigList() {
         <p className="text-gray-400">
           {apis.length} API configuration{apis.length !== 1 ? 's' : ''} ingested
         </p>
-        <button
-          onClick={handleIngest}
-          disabled={isIngesting}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark disabled:opacity-50 transition-colors"
-        >
-          {isIngesting ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <FolderSync className="w-4 h-4" />
-          )}
-          Re-ingest from Folder
-        </button>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-lg hover:bg-secondary/80 cursor-pointer disabled:opacity-50 transition-colors">
+            {uploadPostmanMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Upload className="w-4 h-4" />
+            )}
+            Upload Postman
+            <input
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={handlePostmanUpload}
+              disabled={uploadPostmanMutation.isPending}
+            />
+          </label>
+          <button
+            onClick={handleIngest}
+            disabled={isIngesting}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark disabled:opacity-50 transition-colors"
+          >
+            {isIngesting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FolderSync className="w-4 h-4" />
+            )}
+            Re-ingest from Folder
+          </button>
+        </div>
       </div>
 
       {/* Ingest Result */}
       {ingestMutation.isSuccess && ingestMutation.data && (
         <div className="p-3 bg-success/10 border border-success/20 rounded-lg text-success text-sm animate-fadeIn">
           Ingested: {ingestMutation.data.ingested}, Skipped: {ingestMutation.data.skipped}, Failed: {ingestMutation.data.failed}
+        </div>
+      )}
+
+      {/* Postman Upload Result */}
+      {uploadPostmanMutation.isSuccess && uploadPostmanMutation.data && (
+        <div className={`p-3 rounded-lg text-sm animate-fadeIn ${
+          uploadPostmanMutation.data.message.includes('no changes')
+            ? 'bg-yellow-500/10 border border-yellow-500/20 text-yellow-400'
+            : 'bg-success/10 border border-success/20 text-success'
+        }`}>
+          {uploadPostmanMutation.data.message.includes('updated')
+            ? `Updated: ${uploadPostmanMutation.data.name} (${uploadPostmanMutation.data.endpoints} endpoints)`
+            : uploadPostmanMutation.data.message.includes('no changes')
+            ? `No changes: ${uploadPostmanMutation.data.name} (${uploadPostmanMutation.data.endpoints} endpoints)`
+            : `Ingested: ${uploadPostmanMutation.data.name} (${uploadPostmanMutation.data.endpoints} endpoints)`}
+        </div>
+      )}
+
+      {uploadPostmanMutation.isError && (
+        <div className="p-3 bg-error/10 border border-error/20 rounded-lg text-error text-sm animate-fadeIn">
+          Failed to upload Postman collection. Please check the file format.
         </div>
       )}
 
