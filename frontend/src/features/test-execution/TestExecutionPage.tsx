@@ -14,6 +14,30 @@ import type { ParseResult, ConstructedRequest, ExecuteResponse, ValidationResult
 
 type TestStep = 'idle' | 'parsing' | 'clarifying' | 'constructing' | 'executing' | 'validating' | 'complete';
 
+// Determine expected status code based on HTTP method and actual response
+function getExpectedStatusCode(method: string, actualStatusCode: number): number {
+  const upperMethod = method.toUpperCase();
+  
+  // If the actual status code is in the 2xx range, use it as the expected code
+  // This handles cases like 201 for POST, 204 for DELETE, etc.
+  if (actualStatusCode >= 200 && actualStatusCode < 300) {
+    return actualStatusCode;
+  }
+  
+  // Default expected status codes by method (for when response is an error)
+  switch (upperMethod) {
+    case 'POST':
+      return 201; // Created
+    case 'DELETE':
+      return 204; // No Content (or 200)
+    case 'PUT':
+    case 'PATCH':
+    case 'GET':
+    default:
+      return 200; // OK
+  }
+}
+
 interface TestState {
   step: TestStep;
   parseResult: ParseResult | null;
@@ -110,9 +134,11 @@ export default function TestExecutionPage() {
 
       // Step 4: Validate
       setState((prev) => ({ ...prev, step: 'validating' }));
+      // Determine expected status code based on HTTP method
+      const expectedStatusCode = getExpectedStatusCode(constructedRequest.method, response.status_code);
       const validationResult = await validationApi.validate(
         { status_code: response.status_code, body: response.body },
-        200
+        expectedStatusCode
       );
       setState((prev) => ({ ...prev, validationResult, step: 'complete' }));
 
