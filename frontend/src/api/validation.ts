@@ -1,12 +1,18 @@
 import apiClient from './client';
 import type { ValidationResult } from '../types';
 
+interface ValidateParams {
+  status_code: number;
+  body: unknown;
+}
+
 export const validationApi = {
-  validate: async (response: unknown, expectedStatus?: number, schema?: unknown): Promise<ValidationResult> => {
+  validate: async (response: ValidateParams, expectedStatus?: number, schema?: unknown): Promise<ValidationResult> => {
     const result = await apiClient.post<ValidationResult>('/api/v1/validate', {
-      response,
+      response: response.body,
+      status_code: response.status_code,
       expected_status: expectedStatus,
-      schema,
+      expected_schema: schema,
     });
     return result.data;
   },
