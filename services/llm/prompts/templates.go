@@ -85,24 +85,31 @@ func ConstructRequestPromptWithContext(parseResult string, apiConfig string, api
 ## Task
 Construct the complete API request. **CRITICAL REQUIREMENTS**:
 
-1. **USE THE EXAMPLE AS A TEMPLATE**: Start with the complete example request from the API context and modify only the fields the user specified. Keep ALL other fields from the example.
+1. **COPY THE ENTIRE EXAMPLE REQUEST**: You MUST start by COPYING the complete example request body from the API context EXACTLY as-is. Then ONLY modify the specific values the user mentioned (like amount, currency). DO NOT remove ANY fields from the example.
 
-2. **INCLUDE ALL REQUIRED NESTED OBJECTS**: The request body MUST include:
-   - All top-level required fields
-   - Complete "sender" object with: first_name, last_name, address, city, country, account_number
-   - Complete "recipient" object with: first_name, last_name, address, city, country, account_number  
-   - Complete "card" object with: card_number, expiry_month, expiry_year
-   - Complete "merchant_acquirer_configuration" with both:
-     - "processing_profile": processing_profile_name, entity_id, business_model, acquirer_key, status, schemes, processing_type, business_settings
-     - "acquirer": acquirer_key, acquirer_name, acquirer_country_code, forwarding_institution_id, processor_key, custom_settings
+2. **THE BODY MUST INCLUDE ALL OF THESE (copy from example)**:
+   - service_type, action_id, transaction_id, transaction_purpose, entity_id, processing_key
+   - amount, currency, merchant_category_code, fund_transfer_type
+   - All card_acceptor_* fields
+   - cko_vault_id, sequence_number (use example value: 1000000000)
+   - Complete "card" object with card_number, expiry_month, expiry_year (INTEGERS, not strings!)
+   - Complete "sender" object with ALL fields from the example
+   - Complete "recipient" object with ALL fields from the example
+   - Complete "merchant_acquirer_configuration" with BOTH nested objects from the example
 
-3. **BUILD THE FULL URL**: Combine base_url + endpoint path with path parameters replaced
-   - Example: base_url "http://cp-ptc.qa.internal/mastercard" + path "/authorizations/{payment_id}/paytocard" 
-   - Result: "http://cp-ptc.qa.internal/mastercard/authorizations/pay_xyz123/paytocard"
+3. **BUILD THE FULL URL - CRITICAL**:
+   - The HOST is ALWAYS: http://cp-ptc.qa.internal (do NOT use base_url if it contains "{{" variables)
+   - The PATH comes from the matched API's endpoint path (e.g., /visa/authorizations/{payment_id}/paytocard or /mastercard/authorizations/{payment_id}/paytocard)
+   - Replace {payment_id} or {{payment_id}} with a generated payment ID like pay_kgaohkfk72ketfpxkf55gpytwu
+   - EXAMPLE for Visa: http://cp-ptc.qa.internal/visa/authorizations/pay_xyz123/paytocard
+   - EXAMPLE for Mastercard: http://cp-ptc.qa.internal/mastercard/authorizations/pay_xyz123/paytocard
+   - The path ALREADY includes /visa/ or /mastercard/ - just append it to the host!
 
-4. **USE EXAMPLE VALUES FOR UNSPECIFIED FIELDS**: For any field the user didn't mention, use the value from the example in the API context.
+4. **PATH PARAMETERS**: Generate a valid CKO payment_id like pay_kgaohkfk72ketfpxkf55gpytwu
 
-5. All required headers including Content-Type: application/json
+5. **ONLY MODIFY WHAT USER SPECIFIED**: If user says "100 USD", only change amount to 100 and currency to USD. Keep EVERYTHING else from the example.
+
+6. Headers: {"Content-Type": "application/json"}
 
 Respond in this JSON format (body must be a complete, valid payload):
 {
@@ -204,12 +211,21 @@ func BuildAPIContext(contexts []map[string]interface{}) string {
 						}
 
 						// Include example request if available
+						hasExample := false
 						if examples, ok := epMap["examples"].([]interface{}); ok && len(examples) > 0 {
 							if ex, ok := examples[0].(map[string]interface{}); ok {
 								if exReq, ok := ex["request"].(map[string]interface{}); ok {
 									exJSON, _ := json.MarshalIndent(exReq, "    ", "  ")
 									part += fmt.Sprintf("\n  Example request body:\n    %s", string(exJSON))
+									hasExample = true
 								}
+							}
+						}
+						// If no examples, use request_schema as the template (for Postman imports)
+						if !hasExample {
+							if reqSchema, ok := epMap["request_schema"].(map[string]interface{}); ok && len(reqSchema) > 0 {
+								schemaJSON, _ := json.MarshalIndent(reqSchema, "    ", "  ")
+								part += fmt.Sprintf("\n  Request body template (USE THIS EXACTLY, only modify values user specified):\n    %s", string(schemaJSON))
 							}
 						}
 					}

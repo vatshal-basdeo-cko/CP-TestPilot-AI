@@ -86,8 +86,8 @@ func (h *LLMHandler) ParseRequest(c *gin.Context) {
 		Int("nl_length", len(req.NaturalLanguage)).
 		Msg("Parsing natural language request")
 
-	// Get API context from vector search (RAG)
-	apiContext, err := h.retrieveAPIContext(c.Request.Context(), req.NaturalLanguage)
+	// Get API context from vector search (RAG) - use 3 results for parsing
+	apiContext, err := h.retrieveAPIContext(c.Request.Context(), req.NaturalLanguage, 3)
 	if err != nil {
 		logger.WithRequestID(requestIDStr).Err(err).
 			Msg("Failed to retrieve API context")
@@ -147,12 +147,12 @@ func (h *LLMHandler) ParseRequest(c *gin.Context) {
 	if len(parseResult.Parameters) > 0 {
 		for key, val := range parseResult.Parameters {
 			shouldAutoGenerate := false
-			
+
 			// Check if LLM marked it as "[AUTO]"
 			if strVal, ok := val.(string); ok && strings.ToUpper(strVal) == "[AUTO]" {
 				shouldAutoGenerate = true
 			}
-			
+
 			// Check if nil and it's an auto-generatable field
 			if val == nil {
 				keyLower := strings.ToLower(key)
@@ -168,7 +168,7 @@ func (h *LLMHandler) ParseRequest(c *gin.Context) {
 					}
 				}
 			}
-			
+
 			if shouldAutoGenerate {
 				// Auto-generate the value using faker
 				parseResult.Parameters[key] = h.faker.GenerateByType(key, "string", "")
@@ -232,9 +232,10 @@ func (h *LLMHandler) ConstructRequest(c *gin.Context) {
 	}
 
 	// Retrieve API context using RAG for the api_name from parse result
+	// Use limit 1 to get ONLY the matched API (avoids confusion with other APIs)
 	var apiContext string
 	if apiName, ok := req.ParseResult["api_name"].(string); ok && apiName != "" {
-		apiContext, _ = h.retrieveAPIContext(c.Request.Context(), apiName)
+		apiContext, _ = h.retrieveAPIContext(c.Request.Context(), apiName, 1)
 		logger.WithRequestID(requestIDStr).Debug().
 			Str("api_name", apiName).
 			Str("api_context_length", fmt.Sprintf("%d", len(apiContext))).
@@ -256,7 +257,7 @@ func (h *LLMHandler) ConstructRequest(c *gin.Context) {
 	// Parse response into APICall - extract JSON from markdown if needed
 	var apiCall entities.APICall
 	jsonStr := extractJSON(response)
-	
+
 	// Check if we extracted valid JSON
 	if jsonStr == "" || jsonStr == response {
 		logger.WithRequestID(requestIDStr).Warn().
@@ -372,7 +373,8 @@ func (h *LLMHandler) ListProviders(c *gin.Context) {
 }
 
 // retrieveAPIContext retrieves relevant API context using RAG
-func (h *LLMHandler) retrieveAPIContext(ctx context.Context, query string) (string, error) {
+// limit: number of results to return (use 1 for construct, 3 for parse)
+func (h *LLMHandler) retrieveAPIContext(ctx context.Context, query string, limit int) (string, error) {
 	// Generate embedding for query using Gemini
 	if h.geminiEmbedding == nil || !h.geminiEmbedding.IsAvailable() {
 		return "No API context available (embeddings not configured)", nil
@@ -383,8 +385,8 @@ func (h *LLMHandler) retrieveAPIContext(ctx context.Context, query string) (stri
 		return "No API context available (embedding failed: " + err.Error() + ")", nil
 	}
 
-	// Search Qdrant
-	results, err := h.qdrantSearch.Search(embedding, 3)
+	// Search Qdrant with specified limit
+	results, err := h.qdrantSearch.Search(embedding, limit)
 	if err != nil {
 		return "No API context available (search failed: " + err.Error() + ")", nil
 	}

@@ -55,21 +55,45 @@ func (uc *ExecuteAPICallUseCase) Execute(ctx context.Context, request *entities.
 	}
 
 	// Make the request
+	// #region agent log
+	logger.WithContext(ctx).Debug().
+		Str("method", request.Method).
+		Str("url", request.URL).
+		Interface("headers", request.Headers).
+		Msg("[DEBUG-H1] About to execute HTTP request")
+	// #endregion
 	httpResp, err := uc.httpClient.Do(httpReq)
 	if err != nil {
 		response.Error = err.Error()
 		response.Success = false
 		response.ExecutionTimeMs = time.Since(startTime).Milliseconds()
-		
+
+		// #region agent log
+		logger.WithContext(ctx).Error().
+			Err(err).
+			Str("method", request.Method).
+			Str("url", request.URL).
+			Str("error_type", fmt.Sprintf("%T", err)).
+			Int64("execution_time_ms", response.ExecutionTimeMs).
+			Msg("[DEBUG-H1-H2-H4] HTTP request failed - check DNS/timeout/network")
+		// #endregion
+
 		logger.WithContext(ctx).Err(err).
 			Str("method", request.Method).
 			Str("url", request.URL).
 			Msg("HTTP request failed")
-		
+
 		// Save failed execution
 		_ = uc.executionRepo.SaveExecution(ctx, request, response)
 		return response, err
 	}
+	// #region agent log
+	logger.WithContext(ctx).Debug().
+		Str("method", request.Method).
+		Str("url", request.URL).
+		Int("status_code", httpResp.StatusCode).
+		Msg("[DEBUG-H1] HTTP request succeeded")
+	// #endregion
 	defer httpResp.Body.Close()
 
 	// Read response body
@@ -151,4 +175,3 @@ func (uc *ExecuteAPICallUseCase) buildHTTPRequest(ctx context.Context, request *
 
 	return httpReq, nil
 }
-
